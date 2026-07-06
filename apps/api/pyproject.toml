@@ -1,0 +1,30 @@
+[project]
+name = "cf-api"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "sqlalchemy>=2.0",
+  "psycopg[binary]",
+  "pydantic>=2.0",
+  "pydantic-settings",
+  "alembic",
+  "redis",
+  "python-jose[cryptography]",
+  "passlib[bcrypt]",
+  "minio"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "httpx2",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["app"]

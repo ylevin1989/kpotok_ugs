@@ -1,0 +1,71 @@
+services:
+  cf-redis:
+    image: redis:7
+    container_name: cf-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - cf_redis_data:/data
+
+  cf-minio:
+    image: minio/minio:latest
+    container_name: cf-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - cf_minio_data:/data
+
+  cf-api:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    container_name: cf-api
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      cf-redis:
+        condition: service_started
+      cf-minio:
+        condition: service_started
+    env_file:
+      - .env
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8100
+
+  cf-worker:
+    build:
+      context: .
+      dockerfile: infra/docker/worker.Dockerfile
+    container_name: cf-worker
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      cf-redis:
+        condition: service_started
+    env_file:
+      - .env
+    command: python -m app.main
+
+  cf-web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+    container_name: cf-web
+    restart: unless-stopped
+    depends_on:
+      - cf-api
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:3100:3100"
+    command: npm run start -- --hostname 0.0.0.0 --port 3100
+
+volumes:
+  cf_redis_data:
+  cf_minio_data:

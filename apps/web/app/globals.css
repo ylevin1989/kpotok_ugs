@@ -1,0 +1,270 @@
+:root {
+  color-scheme: dark;
+  --bg: #0b1020;
+  --panel: #121933;
+  --panel-2: #0f1530;
+  --text: #eef2ff;
+  --muted: #a5b4d4;
+  --accent: #7c9cff;
+  --accent-2: #5eead4;
+  --border: rgba(165, 180, 212, 0.2);
+  --danger: #ff8f8f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: linear-gradient(180deg, #09101f 0%, #0b1020 100%);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.page,
+.centered-page {
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0 64px;
+}
+
+.centered-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+}
+
+.card {
+  background: rgba(18, 25, 51, 0.92);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
+.auth-card {
+  width: min(520px, 100%);
+}
+
+.stack-sm > * + * {
+  margin-top: 8px;
+}
+
+.stack-md > * + * {
+  margin-top: 16px;
+}
+
+.stack-lg > * + * {
+  margin-top: 24px;
+}
+
+.stack-xl > * + * {
+  margin-top: 32px;
+}
+
+.eyebrow {
+  display: inline-block;
+  color: var(--accent-2);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+h2 {
+  font-size: 1.2rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.hero-row,
+.section-header,
+.row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.grid.two-up {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.keyvals {
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.keyvals div {
+  display: grid;
+  gap: 4px;
+}
+
+.keyvals dt,
+.row-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.keyvals dd,
+.row-value {
+  margin: 0;
+  font-weight: 600;
+}
+
+.mono {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  word-break: break-all;
+}
+
+.checklist {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.pill {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  color: var(--accent-2);
+  font-weight: 700;
+}
+
+.table-like {
+  display: grid;
+  gap: 12px;
+}
+
+.row {
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(165, 180, 212, 0.12);
+  border-radius: 14px;
+}
+
+.form-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.label-stack {
+  display: grid;
+  gap: 6px;
+}
+
+.input,
+.primary-button,
+.secondary-button {
+  border-radius: 12px;
+  border: 1px solid transparent;
+  min-height: 46px;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(15, 21, 48, 0.95);
+  color: var(--text);
+  border-color: rgba(165, 180, 212, 0.2);
+}
+
+.primary-button {
+  background: linear-gradient(135deg, var(--accent), #6681ff);
+  color: white;
+  padding: 12px 16px;
+  font-weight: 700;
+}
+
+.secondary-button {
+  background: transparent;
+  color: var(--text);
+  border-color: rgba(165, 180, 212, 0.24);
+  padding: 12px 16px;
+}
+
+.secondary-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.compact-header {
+  gap: 12px;
+  align-items: center;
+}
+
+.code-block {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(165, 180, 212, 0.14);
+  background: rgba(8, 12, 28, 0.9);
+  color: var(--accent-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.primary-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.error-text,
+.error-card {
+  color: var(--danger);
+}
+
+@media (max-width: 720px) {
+  .page,
+  .centered-page {
+    width: min(100% - 24px, 1100px);
+    padding: 24px 0 40px;
+  }
+
+  .hero-row,
+  .section-header,
+  .row {
+    flex-direction: column;
+  }
+}

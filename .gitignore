@@ -1,0 +1,15 @@
+.env
+.env.bak.*
+.venv
+__pycache__/
+*.pyc
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.pytest_cache/
+*.db
+*.bak.*
+.hermes/
+.DS_Store
