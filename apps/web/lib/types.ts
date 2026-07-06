@@ -212,6 +212,58 @@ export interface ContentPlanGenerateInput {
   status?: string;
 }
 
+export interface ContentPlanExportInput {
+  organization_id: string;
+  brand_id: string;
+  scope?: ContentScope | null;
+  product_id?: string | null;
+  audience_segment_id?: string | null;
+  format?: 'csv' | 'json';
+}
+
+export interface SubscriptionRead {
+  id: string;
+  organization_id: string;
+  plan_name: string;
+  monthly_content_plan_limit: number;
+  monthly_export_limit: number;
+  is_active: boolean;
+  current_period_start: string;
+  current_period_end: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubscriptionCreateInput {
+  organization_id: string;
+  plan_name: string;
+  monthly_content_plan_limit: number;
+  monthly_export_limit: number;
+  is_active: boolean;
+  current_period_start: string;
+  current_period_end: string;
+}
+
+export interface SubscriptionListResponse {
+  items: SubscriptionRead[];
+}
+
+export interface UsageRecordRead {
+  id: string;
+  organization_id: string;
+  subscription_id: string | null;
+  metric: string;
+  quantity: number;
+  window_start: string;
+  window_end: string;
+  metadata_json: string | null;
+  created_at: string;
+}
+
+export interface UsageRecordListResponse {
+  items: UsageRecordRead[];
+}
+
 export interface BriefRead {
   id: string;
   organization_id: string;

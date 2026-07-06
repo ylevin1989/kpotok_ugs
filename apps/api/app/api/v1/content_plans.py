@@ -1,7 +1,12 @@
+from __future__ import annotations
+
+import csv
+import io
+import json
 from datetime import date as DateType, timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -16,8 +21,15 @@ from app.db.models.content_plan import ContentPlan
 from app.db.models.organization import Organization, OrganizationMembership
 from app.db.models.product import Product
 from app.db.session import get_db
+from app.domain.billing import (
+    CONTENT_PLAN_EXPORT_METRIC,
+    CONTENT_PLAN_GENERATION_METRIC,
+    enforce_usage_limit,
+    get_or_create_subscription,
+    record_usage,
+)
 from app.domain.content_scope import ContentScope
-from app.schemas.content_plan import ContentPlanCreate, ContentPlanGenerate, ContentPlanListResponse, ContentPlanRead
+from app.schemas.content_plan import ContentPlanCreate, ContentPlanExport, ContentPlanGenerate, ContentPlanListResponse, ContentPlanRead
 
 router = APIRouter(prefix="/content-plans", tags=["content-plans"])
 
@@ -70,6 +82,25 @@ def _build_generation_context(brand: Brand, product: Product | None, audience_se
         if normalized and normalized not in unique_parts:
             unique_parts.append(normalized)
     return ' · '.join(unique_parts[:5])
+
+
+def _serialize_content_plan(item: ContentPlan) -> dict[str, object]:
+    return {
+        'id': str(item.id),
+        'organization_id': str(item.organization_id),
+        'brand_id': str(item.brand_id),
+        'product_id': str(item.product_id) if item.product_id is not None else None,
+        'audience_segment_id': str(item.audience_segment_id) if item.audience_segment_id is not None else None,
+        'scope': item.scope,
+        'date': item.date.isoformat(),
+        'title': item.title,
+        'platform': item.platform,
+        'content_type': item.content_type,
+        'goal': item.goal,
+        'status': item.status,
+        'created_at': item.created_at.isoformat(),
+        'updated_at': item.updated_at.isoformat(),
+    }
 
 
 @router.get("", response_model=ContentPlanListResponse)
@@ -141,6 +172,18 @@ def generate_content_plans(
     if organization is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     ensure_content_organization_writable(organization)
+    subscription = get_or_create_subscription(db, payload.organization_id)
+    if not subscription.is_active:
+        raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail='Subscription is inactive')
+    quantity = (payload.end_date - payload.start_date).days + 1
+    enforce_usage_limit(
+        db,
+        organization_id=payload.organization_id,
+        metric=CONTENT_PLAN_GENERATION_METRIC,
+        quantity=quantity,
+        limit=subscription.monthly_content_plan_limit,
+        error_detail='Monthly content-plan limit exceeded',
+    )
     brand = get_brand_in_organization(db, payload.brand_id, payload.organization_id)
     product: Product | None = None
     if payload.product_id is not None:
@@ -175,7 +218,73 @@ def generate_content_plans(
     db.commit()
     for item in items:
         db.refresh(item)
+    record_usage(
+        db,
+        organization_id=payload.organization_id,
+        subscription=subscription,
+        metric=CONTENT_PLAN_GENERATION_METRIC,
+        quantity=quantity,
+        metadata={'brand_id': str(payload.brand_id), 'scope': payload.scope.value},
+    )
     return ContentPlanListResponse(items=[ContentPlanRead.model_validate(item, from_attributes=True) for item in items])
+
+
+@router.post("/export")
+def export_content_plans(
+    payload: ContentPlanExport,
+    memberships: list[OrganizationMembership] = Depends(get_accessible_memberships),
+    db: Session = Depends(get_db),
+) -> Response:
+    get_organization_membership(payload.organization_id, memberships)
+    get_brand_in_organization(db, payload.brand_id, payload.organization_id)
+    subscription = get_or_create_subscription(db, payload.organization_id)
+    if not subscription.is_active:
+        raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail='Subscription is inactive')
+    query = select(ContentPlan).where(ContentPlan.organization_id == payload.organization_id, ContentPlan.brand_id == payload.brand_id)
+    if payload.scope is not None:
+        query = query.where(ContentPlan.scope == payload.scope.value)
+    if payload.product_id is not None:
+        query = query.where(ContentPlan.product_id == payload.product_id)
+    if payload.audience_segment_id is not None:
+        query = query.where(ContentPlan.audience_segment_id == payload.audience_segment_id)
+    items = db.execute(query.order_by(ContentPlan.date.asc(), ContentPlan.created_at.asc())).scalars().all()
+    enforce_usage_limit(
+        db,
+        organization_id=payload.organization_id,
+        metric=CONTENT_PLAN_EXPORT_METRIC,
+        quantity=1,
+        limit=subscription.monthly_export_limit,
+        error_detail='Monthly export limit exceeded',
+    )
+    serialized_items = [_serialize_content_plan(item) for item in items]
+    record_usage(
+        db,
+        organization_id=payload.organization_id,
+        subscription=subscription,
+        metric=CONTENT_PLAN_EXPORT_METRIC,
+        quantity=1,
+        metadata={'brand_id': str(payload.brand_id), 'format': payload.format, 'item_count': len(serialized_items)},
+    )
+    filename = f"content-plans-{payload.organization_id}-{payload.brand_id}.{payload.format}"
+    if payload.format == 'json':
+        return Response(
+            content=json.dumps({'items': serialized_items}, ensure_ascii=False),
+            media_type='application/json',
+            headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+        )
+
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=list(serialized_items[0].keys()) if serialized_items else [
+        'id', 'organization_id', 'brand_id', 'product_id', 'audience_segment_id', 'scope', 'date', 'title', 'platform', 'content_type', 'goal', 'status', 'created_at', 'updated_at'
+    ])
+    writer.writeheader()
+    for row in serialized_items:
+        writer.writerow(row)
+    return Response(
+        content=buffer.getvalue(),
+        media_type='text/csv',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/{content_plan_id}", response_model=ContentPlanRead)

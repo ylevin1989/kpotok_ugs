@@ -5,6 +5,7 @@ import type {
   BrandListResponse,
   BriefListResponse,
   BriefRead,
+  ContentPlanExportInput,
   ContentPlanGenerateInput,
   ContentPlanListResponse,
   ContentPlanRead,
@@ -21,6 +22,10 @@ import type {
   ProductListResponse,
   ProductRead,
   ProductUpdateInput,
+  SubscriptionCreateInput,
+  SubscriptionListResponse,
+  SubscriptionRead,
+  UsageRecordListResponse,
 } from './types';
 
 const DEFAULT_API_BASE_URL = 'https://apiha.uno-ai.pw';
@@ -208,6 +213,61 @@ export function generateContentPlans(
     method: 'POST',
     headers: authHeaders(accessToken),
     body: JSON.stringify(payload),
+  });
+}
+
+export function exportContentPlans(
+  accessToken: string,
+  payload: ContentPlanExportInput,
+): Promise<{ content: string; contentType: string }> {
+  return fetch(`${getApiBaseUrl()}/api/v1/content-plans/export`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(accessToken),
+    },
+    body: JSON.stringify(payload),
+  }).then(async (response) => {
+    if (!response.ok) {
+      throw new Error(await readErrorMessage(response));
+    }
+    return {
+      content: await response.text(),
+      contentType: response.headers.get('content-type') || 'application/octet-stream',
+    };
+  });
+}
+
+export function listSubscriptions(
+  accessToken: string,
+  organizationId: string,
+): Promise<SubscriptionListResponse> {
+  const params = new URLSearchParams({ organization_id: organizationId });
+  return apiFetch<SubscriptionListResponse>(`/api/v1/subscriptions?${params.toString()}`, {
+    method: 'GET',
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function upsertSubscription(
+  accessToken: string,
+  payload: SubscriptionCreateInput,
+): Promise<SubscriptionRead> {
+  return apiFetch<SubscriptionRead>('/api/v1/subscriptions', {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getUsageRecords(
+  accessToken: string,
+  organizationId: string,
+): Promise<UsageRecordListResponse> {
+  const params = new URLSearchParams({ organization_id: organizationId });
+  return apiFetch<UsageRecordListResponse>(`/api/v1/subscriptions/usage?${params.toString()}`, {
+    method: 'GET',
+    headers: authHeaders(accessToken),
   });
 }
 

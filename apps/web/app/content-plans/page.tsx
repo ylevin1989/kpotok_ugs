@@ -6,6 +6,7 @@ import type { FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { loadScopeSelection, loadSession } from '../../lib/auth';
 import {
+  exportContentPlans,
   generateContentPlans,
   getAudienceSegments,
   getBrands,
@@ -250,6 +251,36 @@ export default function ContentPlansPage() {
     }
   }
 
+  async function handleExport() {
+    if (!accessToken || !organizationId || !brandId) {
+      setError('Нет активного scope');
+      return;
+    }
+    const token = accessToken as string;
+    const orgId = organizationId as string;
+    const brId = brandId as string;
+    try {
+      const response = await exportContentPlans(token, {
+        organization_id: orgId,
+        brand_id: brId,
+        scope: selectedScope,
+        product_id: selectedScope === 'product' ? selectedProductId || null : null,
+        audience_segment_id: selectedAudienceSegmentId || null,
+        format: 'csv',
+      });
+      const blob = new Blob([response.content], { type: response.contentType });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `content-plans-${orgId}-${brId}.csv`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setNotice('Export CSV ready');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Не удалось экспортировать content plans');
+    }
+  }
+
   return (
     <main className="page stack-xl">
       <section className="hero-row">
@@ -263,6 +294,10 @@ export default function ContentPlansPage() {
         <div className="row">
           <Link className="secondary-button" href="/dashboard">Dashboard</Link>
           <Link className="secondary-button" href="/products">Products</Link>
+          <Link className="secondary-button" href="/subscriptions">Subscriptions</Link>
+          <button className="primary-button" onClick={handleExport} type="button">
+            Export CSV
+          </button>
         </div>
       </section>
 

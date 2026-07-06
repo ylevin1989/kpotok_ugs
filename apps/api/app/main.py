@@ -14,6 +14,7 @@ from app.api.v1.media_assets import router as media_assets_router
 from app.api.v1.organizations import router as organizations_router
 from app.api.v1.products import router as products_router
 from app.api.v1.quality_checks import router as quality_checks_router
+from app.api.v1.subscriptions import router as subscriptions_router
 from app.api.v1.tickets import router as tickets_router
 from app.core.config import settings
 
@@ -49,6 +50,7 @@ app.include_router(audience_segments_router, prefix="/api/v1")
 app.include_router(content_plans_router, prefix="/api/v1")
 app.include_router(content_items_router, prefix="/api/v1")
 app.include_router(content_versions_router, prefix="/api/v1")
+app.include_router(subscriptions_router, prefix="/api/v1")
 app.include_router(tickets_router, prefix="/api/v1")
 app.include_router(quality_checks_router, prefix="/api/v1")
 app.include_router(jobs_router, prefix="/api/v1")

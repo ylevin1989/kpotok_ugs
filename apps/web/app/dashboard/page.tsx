@@ -546,6 +546,9 @@ export default function DashboardPage() {
           <Link className="secondary-button" href="/content-plans">
             Plans
           </Link>
+          <Link className="secondary-button" href="/subscriptions">
+            Subscriptions
+          </Link>
           <button className="secondary-button" onClick={handleLogout} type="button">
             Выйти
           </button>

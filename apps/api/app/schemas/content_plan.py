@@ -1,4 +1,5 @@
 from datetime import date as DateType, datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
@@ -47,6 +48,15 @@ class ContentPlanGenerate(BaseModel):
         if self.end_date < self.start_date:
             raise ValueError('end_date must be greater than or equal to start_date')
         return self
+
+
+class ContentPlanExport(BaseModel):
+    organization_id: UUID = Field(description='Organization that owns the exported content plans.')
+    brand_id: UUID = Field(description='Brand scope for the exported content plans.')
+    scope: ContentScope | None = Field(default=None, description='Optional content plan scope filter.')
+    product_id: UUID | None = Field(default=None, description='Optional product filter.')
+    audience_segment_id: UUID | None = Field(default=None, description='Optional audience segment filter.')
+    format: Literal['csv', 'json'] = Field(default='csv', description='Export format.')
 
 
 class ContentPlanRead(BaseModel):

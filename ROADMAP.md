@@ -210,6 +210,24 @@ Delivered scope:
 - `docs/content-plans.md` documents the generation endpoint and date-range behavior
 - API regression remains green after the generation packet
 
+### Stage 4 / Export + Subscriptions Packet 01 — done
+Goal completed: add export, subscriptions, usage accounting, and limit enforcement on top of content plans.
+
+Delivered scope:
+- `apps/api/app/db/models/subscription.py` and `apps/api/app/db/models/usage_record.py` define billing metadata and usage event storage
+- `apps/api/app/domain/billing.py` centralizes subscription lookup, usage recording, and monthly limit enforcement
+- `apps/api/app/api/v1/subscriptions.py` exposes subscription list/create and usage list endpoints
+- `apps/api/app/api/v1/content_plans.py` now supports CSV/JSON export plus usage-backed generation/export limit checks
+- `apps/api/alembic/versions/20260706_024_create_subscriptions_and_usage_records.py` adds the live tables and indexes
+- `apps/api/tests/test_packet197.py` covers subscription creation, generation/export accounting, and limit blocking
+- `apps/web/app/subscriptions/page.tsx` adds a UI for subscription editing and usage inspection
+- `apps/web/app/content-plans/page.tsx` adds export support and links to subscriptions
+- `apps/web/app/dashboard/page.tsx` links to the subscriptions workspace
+- `apps/web/lib/api.ts` and `apps/web/lib/types.ts` add client contracts for billing and usage surfaces
+- `docs/billing.md` documents the current export/subscription/usage contract
+- `ROADMAP.md`, `docs/ai_context/04_current_task.md`, and `docs/ai_context/06_handoff.md` are synchronized with the packet
+- API regression and web production build remain green after the monetization packet
+
 ### Content Items Packet 01 — done
 Goal completed: add the first execution-ready item surface under content plans, with plan linkage, scope-aware validation, and quality scoring.
 

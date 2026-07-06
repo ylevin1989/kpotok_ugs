@@ -10,7 +10,9 @@ from app.db.models.organization_permission_event import OrganizationPermissionEv
 from app.db.models.quality_check import QualityCheck
 from app.db.models.organization import MembershipRole, Organization, OrganizationMembership, OrganizationStatus
 from app.db.models.product import Product
+from app.db.models.subscription import Subscription
 from app.db.models.ticket import Ticket
+from app.db.models.usage_record import UsageRecord
 from app.db.models.user import PlatformRole, User
 
 __all__ = [
