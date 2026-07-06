@@ -38,11 +38,14 @@ export interface OrganizationListResponse {
   items: OrganizationRead[];
 }
 
+export type ContentScope = 'brand' | 'product' | 'campaign' | 'comparison';
+
 export interface BrandRead {
   id: string;
   organization_id: string;
   name: string;
   slug: string;
+  dna_json: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }
@@ -103,6 +106,74 @@ export interface ProductUpdateInput {
   restrictions?: string[];
   status?: string;
   readiness_score?: number;
+}
+
+export interface MediaAssetRead {
+  id: string;
+  organization_id: string;
+  brand_id: string;
+  product_id: string | null;
+  scope: ContentScope;
+  name: string;
+  description: string;
+  asset_key: string;
+  source_url: string | null;
+  content_type: string;
+  size_bytes: number | null;
+  checksum: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MediaAssetListResponse {
+  items: MediaAssetRead[];
+}
+
+export interface MediaAssetCreateInput {
+  organization_id: string;
+  brand_id: string;
+  product_id?: string | null;
+  scope: ContentScope;
+  name: string;
+  description: string;
+  asset_key: string;
+  source_url?: string | null;
+  content_type: string;
+  size_bytes?: number | null;
+  checksum?: string | null;
+}
+
+export interface AudienceSegmentRead {
+  id: string;
+  organization_id: string;
+  brand_id: string;
+  product_id: string | null;
+  scope: ContentScope;
+  name: string;
+  description: string;
+  pain_points: string[];
+  goals: string[];
+  objections: string[];
+  keywords: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AudienceSegmentListResponse {
+  items: AudienceSegmentRead[];
+}
+
+export interface AudienceSegmentCreateInput {
+  organization_id: string;
+  brand_id: string;
+  product_id?: string | null;
+  scope: ContentScope;
+  name: string;
+  description: string;
+  pain_points?: string[];
+  goals?: string[];
+  objections?: string[];
+  keywords?: string[];
 }
 
 export interface BriefRead {

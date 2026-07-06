@@ -131,6 +131,17 @@ Delivered scope:
 - `.gitignore` now ignores `.hermes/` and backup artifacts, and the repo is initialized with git
 - `npm run build` for `apps/web` succeeds after the product UI additions
 
+### Product UI Stage 02 — done
+Goal completed: add the remaining visible product workflow slices so the dashboard can reach the full product workspace set.
+
+Delivered scope:
+- `apps/web/lib/types.ts` now includes `ContentScope`, `MediaAsset*`, and `AudienceSegment*` browser contracts
+- `apps/web/lib/api.ts` now includes `getMediaAssets`, `createMediaAsset`, `getAudienceSegments`, and `createAudienceSegment`
+- `apps/web/app/media-assets/page.tsx` introduces a media library workspace with org/brand/product scope selection and asset creation
+- `apps/web/app/audience-segments/page.tsx` introduces an audience segment workspace with org/brand/product scope selection and segment creation
+- `apps/web/app/dashboard/page.tsx` links to `/media-assets` and `/audience-segments` in addition to brands/products
+- `npm run build` for `apps/web` succeeds after the new workflow slices
+
 ### Product Core Packet 02 — done
 Goal completed: extend the product surface with update semantics so managers can edit product attributes in place while keeping org/brand scope and uniqueness rules intact.
 

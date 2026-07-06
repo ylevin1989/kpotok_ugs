@@ -531,8 +531,17 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="row">
+          <Link className="secondary-button" href="/brands">
+            Brands
+          </Link>
           <Link className="secondary-button" href="/products">
             Products
+          </Link>
+          <Link className="secondary-button" href="/media-assets">
+            Media
+          </Link>
+          <Link className="secondary-button" href="/audience-segments">
+            Audiences
           </Link>
           <button className="secondary-button" onClick={handleLogout} type="button">
             Выйти

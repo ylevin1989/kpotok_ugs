@@ -1,11 +1,18 @@
 import type {
+  AudienceSegmentCreateInput,
+  AudienceSegmentListResponse,
+  AudienceSegmentRead,
   BrandListResponse,
   BriefListResponse,
   BriefRead,
+  ContentScope,
   JobListResponse,
   JobRead,
   LoginResponse,
   MeResponse,
+  MediaAssetCreateInput,
+  MediaAssetListResponse,
+  MediaAssetRead,
   OrganizationListResponse,
   ProductCreateInput,
   ProductListResponse,
@@ -79,6 +86,13 @@ export function getBrands(accessToken: string, organizationId: string): Promise<
   });
 }
 
+export function generateBrandDna(accessToken: string, brandId: string): Promise<JobRead> {
+  return apiFetch<JobRead>(`/api/v1/brands/${brandId}/generate-dna`, {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+  });
+}
+
 export function getProducts(
   accessToken: string,
   organizationId: string,
@@ -111,6 +125,57 @@ export function generateProductDna(accessToken: string, productId: string): Prom
   return apiFetch<JobRead>(`/api/v1/products/${productId}/generate-dna`, {
     method: 'POST',
     headers: authHeaders(accessToken),
+  });
+}
+
+export function getMediaAssets(
+  accessToken: string,
+  organizationId: string,
+  brandId: string,
+  scope?: ContentScope,
+  productId?: string | null,
+): Promise<MediaAssetListResponse> {
+  const params = new URLSearchParams({ organization_id: organizationId, brand_id: brandId });
+  if (scope) params.set('scope', scope);
+  if (productId) params.set('product_id', productId);
+  return apiFetch<MediaAssetListResponse>(`/api/v1/media-assets?${params.toString()}`, {
+    method: 'GET',
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function createMediaAsset(accessToken: string, payload: MediaAssetCreateInput): Promise<MediaAssetRead> {
+  return apiFetch<MediaAssetRead>('/api/v1/media-assets', {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getAudienceSegments(
+  accessToken: string,
+  organizationId: string,
+  brandId: string,
+  scope?: ContentScope,
+  productId?: string | null,
+): Promise<AudienceSegmentListResponse> {
+  const params = new URLSearchParams({ organization_id: organizationId, brand_id: brandId });
+  if (scope) params.set('scope', scope);
+  if (productId) params.set('product_id', productId);
+  return apiFetch<AudienceSegmentListResponse>(`/api/v1/audience-segments?${params.toString()}`, {
+    method: 'GET',
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function createAudienceSegment(
+  accessToken: string,
+  payload: AudienceSegmentCreateInput,
+): Promise<AudienceSegmentRead> {
+  return apiFetch<AudienceSegmentRead>('/api/v1/audience-segments', {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
   });
 }
 

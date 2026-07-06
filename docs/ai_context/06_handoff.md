@@ -1,17 +1,16 @@
 # Handoff
 
 ## Summary for the next packet
-- The product-facing UI shell is live at `/products`.
-- Dashboard now links into the product workspace.
-- The repo is now under git, with backups and `.hermes/` ignored.
-- Next work should expand adjacent product UI slices, not re-open the API update packet.
+- The product workspace now covers `/brands`, `/products`, `/media-assets`, and `/audience-segments`.
+- Dashboard links to all of those surfaces and still serves as the scope-selection hub.
+- The repo is under git, and the web build is green.
 
 ## Do next
-- Add the brand screen or another product-adjacent UI slice that the product workspace depends on.
-- Keep the products workspace and dashboard scope selection consistent.
-- Reuse the existing auth/session storage and product API helpers.
+- Move on to `stage3-plan-generation`.
+- Reuse the current auth/session/scope model and the product/brand DNA payloads already exposed by the API.
+- Keep the new product slices aligned with the dashboard scope selection.
 
 ## Do not do
+- Do not reopen the API product-update packet unless a new issue appears.
+- Do not remove the current product list/edit flow or the new media/audience screens.
 - Do not expand jobs/admin yet.
-- Do not remove the current product list/edit flow.
-- Do not change the existing API product contract unless the next slice requires it.
