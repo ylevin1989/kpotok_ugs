@@ -176,6 +176,42 @@ export interface AudienceSegmentCreateInput {
   keywords?: string[];
 }
 
+export interface ContentPlanRead {
+  id: string;
+  organization_id: string;
+  brand_id: string;
+  product_id: string | null;
+  audience_segment_id: string | null;
+  scope: ContentScope;
+  date: string;
+  title: string;
+  platform: string;
+  content_type: string;
+  goal: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContentPlanListResponse {
+  items: ContentPlanRead[];
+}
+
+export interface ContentPlanGenerateInput {
+  organization_id: string;
+  brand_id: string;
+  product_id?: string | null;
+  audience_segment_id?: string | null;
+  scope: ContentScope;
+  start_date: string;
+  end_date: string;
+  title_prefix?: string;
+  platform: string;
+  content_type: string;
+  goal: string;
+  status?: string;
+}
+
 export interface BriefRead {
   id: string;
   organization_id: string;

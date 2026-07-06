@@ -24,10 +24,12 @@
 - `product_id` must belong to the same organization and brand.
 - `audience_segment_id`, when provided, must belong to the same organization and brand.
 - Archived organizations are read-only for plan creation.
+- `POST /api/v1/content-plans/generate` creates one row per date in the inclusive `start_date`/`end_date` range and mixes in Brand/Product DNA context when available.
 
 ## API
 
 - `POST /api/v1/content-plans`
+- `POST /api/v1/content-plans/generate`
 - `GET /api/v1/content-plans`
 - `GET /api/v1/content-plans/{content_plan_id}`
 

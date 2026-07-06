@@ -5,6 +5,9 @@ import type {
   BrandListResponse,
   BriefListResponse,
   BriefRead,
+  ContentPlanGenerateInput,
+  ContentPlanListResponse,
+  ContentPlanRead,
   ContentScope,
   JobListResponse,
   JobRead,
@@ -173,6 +176,35 @@ export function createAudienceSegment(
   payload: AudienceSegmentCreateInput,
 ): Promise<AudienceSegmentRead> {
   return apiFetch<AudienceSegmentRead>('/api/v1/audience-segments', {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getContentPlans(
+  accessToken: string,
+  organizationId: string,
+  brandId: string,
+  scope?: ContentScope,
+  productId?: string | null,
+  audienceSegmentId?: string | null,
+): Promise<ContentPlanListResponse> {
+  const params = new URLSearchParams({ organization_id: organizationId, brand_id: brandId });
+  if (scope) params.set('scope', scope);
+  if (productId) params.set('product_id', productId);
+  if (audienceSegmentId) params.set('audience_segment_id', audienceSegmentId);
+  return apiFetch<ContentPlanListResponse>(`/api/v1/content-plans?${params.toString()}`, {
+    method: 'GET',
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function generateContentPlans(
+  accessToken: string,
+  payload: ContentPlanGenerateInput,
+): Promise<ContentPlanListResponse> {
+  return apiFetch<ContentPlanListResponse>('/api/v1/content-plans/generate', {
     method: 'POST',
     headers: authHeaders(accessToken),
     body: JSON.stringify(payload),

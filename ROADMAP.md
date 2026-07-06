@@ -200,6 +200,16 @@ Delivered scope:
 - `docs/content-plans.md` documents the current content-plan contract and validation rules
 - API regression remains green after the additive content plans packet
 
+### Content Plans Packet 02 — done
+Goal completed: add deterministic content-plan generation over an inclusive date range, using scope plus Brand/Product/Audience DNA context.
+
+Delivered scope:
+- `apps/api/app/schemas/content_plan.py` adds `ContentPlanGenerate` for date-range generation requests
+- `apps/api/app/api/v1/content_plans.py` adds `POST /api/v1/content-plans/generate` and derives titles from brand/product/audience DNA context
+- `apps/api/tests/test_packet196.py` covers successful generation, inclusive date expansion, and product-scope validation
+- `docs/content-plans.md` documents the generation endpoint and date-range behavior
+- API regression remains green after the generation packet
+
 ### Content Items Packet 01 — done
 Goal completed: add the first execution-ready item surface under content plans, with plan linkage, scope-aware validation, and quality scoring.
 
