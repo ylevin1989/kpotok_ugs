@@ -1,14 +1,18 @@
 # Handoff
 
 ## Summary for the next packet
-- The public docs now expose the lifecycle and operator-support workflows at the top level.
-- `README.md` links to organization lifecycle, brand lifecycle, and operator support docs.
-- The brand lifecycle doc is now the public reference for paused-brand metadata-vs-content write behavior.
+- Exports Packet 01 is live on the public API.
+- `exports` now persists tenant-scoped export artifacts with `markdown`, `csv`, and `zip` formats.
+- Download reads back from MinIO using keys under `organizations/{org}/brands/{brand}/exports/{id}/...`.
+- Only `approved` content items and their current content versions are included in artifacts.
+- The live schema is at Alembic head `20260707_027` and `cf-api` keeps auto-applying migrations on startup via `infra/docker/api-entrypoint.sh`.
 
 ## Do next
-- Wait for the next user-directed roadmap step.
-- Keep any future public docs aligned with the API guards and the shared `brand_lifecycle.py` helpers.
+- Keep future export work additive on top of the `exports` table and API surface.
+- Preserve strict tenant scoping on every future export filter and download path.
+- Reuse the Postgres critical-path lane when extending export behavior.
 
 ## Do not do
-- Do not rename the lifecycle statuses without an explicit roadmap update.
-- Do not diverge the public docs from the actual API behavior.
+- Do not remove the `cf-api` entrypoint-based `alembic upgrade head` startup flow.
+- Do not include non-approved content versions in exported artifacts.
+- Do not write export files outside the organization/brand/id-scoped MinIO key prefix.

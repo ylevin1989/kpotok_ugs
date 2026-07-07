@@ -8,6 +8,7 @@ from app.api.v1.briefs import router as briefs_router
 from app.api.v1.content_items import router as content_items_router
 from app.api.v1.content_plans import router as content_plans_router
 from app.api.v1.content_versions import router as content_versions_router
+from app.api.v1.exports import router as exports_router
 from app.api.v1.health import router as health_router
 from app.api.v1.jobs import router as jobs_router
 from app.api.v1.media_assets import router as media_assets_router
@@ -49,6 +50,7 @@ app.include_router(products_router, prefix="/api/v1")
 app.include_router(media_assets_router, prefix="/api/v1")
 app.include_router(audience_segments_router, prefix="/api/v1")
 app.include_router(content_plans_router, prefix="/api/v1")
+app.include_router(exports_router, prefix="/api/v1")
 app.include_router(content_items_router, prefix="/api/v1")
 app.include_router(content_versions_router, prefix="/api/v1")
 app.include_router(subscriptions_router, prefix="/api/v1")

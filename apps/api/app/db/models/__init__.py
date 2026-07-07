@@ -4,6 +4,7 @@ from app.db.models.brief import Brief
 from app.db.models.content_item import ContentItem
 from app.db.models.content_plan import ContentPlan
 from app.db.models.content_version import ContentVersion
+from app.db.models.export import Export
 from app.db.models.job import Job
 from app.db.models.media_asset import MediaAsset
 from app.db.models.organization_permission_event import OrganizationPermissionEvent
@@ -27,6 +28,7 @@ __all__ = [
     "ContentPlan",
     "ContentItem",
     "ContentVersion",
+    "Export",
     "Ticket",
     "QualityCheck",
     "Job",

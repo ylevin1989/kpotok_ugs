@@ -19,6 +19,7 @@ TEST_TARGETS=(
   tests/test_packet201.py
   tests/test_packet202.py
   tests/test_packet203.py
+  tests/test_packet204.py
 )
 
 if ! command -v docker >/dev/null 2>&1; then

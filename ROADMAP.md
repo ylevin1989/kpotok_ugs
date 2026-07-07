@@ -4,6 +4,16 @@
 Content Factory is the control plane and application layer built on top of an existing Hermes runtime. Its job is to provide a production-backed multi-organization product surface with clear org boundaries, membership roles, brand scoping, and later workflow/content execution on top of that foundation.
 
 ## Current status
+### Exports Packet 01 — done
+- `apps/api/app/db/models/export.py` defines the tenant-scoped `exports` model with persisted artifact metadata and `created_by` linkage
+- `apps/api/alembic/versions/20260707_027_create_exports_table.py` upgrades the live schema with the `exports` table plus `export_format` / `export_status` enums
+- `apps/api/app/api/v1/exports.py` exposes `POST /api/v1/content-plans/{id}/export`, `POST /api/v1/exports`, `GET /api/v1/exports`, `GET /api/v1/exports/{id}`, and `GET /api/v1/exports/{id}/download`
+- Export generation is synchronous and only includes `approved` content items with their current content versions
+- Markdown, CSV, and ZIP artifacts are stored in MinIO under `organizations/{org}/brands/{brand}/exports/{id}/...`
+- `apps/api/tests/test_packet204.py` covers plan export, tenant scoping, approved-only filtering, and download behavior
+- The Postgres critical-path lane now includes the export packet and remains green
+- Live deploy verified `20260707_027` at Alembic head and a public API end-to-end export flow completed successfully
+
 ### Production foundation — done
 - Production routing works via Traefik
 - Public domains are live:
