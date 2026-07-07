@@ -10,6 +10,14 @@ class JobCreate(BaseModel):
     brand_id: UUID = Field(description='Brand scope for the job.')
     brief_id: UUID = Field(description='Source brief that the job should execute from.')
     title: str = Field(description='Human-readable job title.')
+    kind: str | None = Field(
+        default=None,
+        description='Optional explicit job kind. Defaults to manual for legacy generic jobs.',
+    )
+    target_brand_id: UUID | None = Field(default=None, description='Optional target brand for typed routing.')
+    target_product_id: UUID | None = Field(default=None, description='Optional target product for typed routing.')
+    target_content_item_id: UUID | None = Field(default=None, description='Optional target content item for typed routing.')
+    target_ticket_id: UUID | None = Field(default=None, description='Optional target ticket for typed routing.')
     execution_profile: str | None = Field(
         default=None,
         description='Optional internal execution profile. Defaults to general_content when omitted.',
@@ -67,6 +75,11 @@ class JobRead(BaseModel):
     organization_id: UUID
     brand_id: UUID
     brief_id: UUID
+    kind: str = Field(description='Explicit job kind used for completion routing.')
+    target_brand_id: UUID | None = None
+    target_product_id: UUID | None = None
+    target_content_item_id: UUID | None = None
+    target_ticket_id: UUID | None = None
     scope: JobScope
     execution_profile: str = Field(description='Resolved internal execution profile for the job.')
     internal_role_plan: list[InternalRolePlanItem] = Field(description='Ordered internal role plan resolved for the job.')

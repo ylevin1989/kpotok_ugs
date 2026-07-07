@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { LoginForm } from '../../components/login-form';
 
 export default function LoginPage() {
@@ -13,6 +14,9 @@ export default function LoginPage() {
           </p>
         </div>
         <LoginForm />
+        <p className="muted">
+          Нет аккаунта? <Link href="/register">Зарегистрироваться</Link>
+        </p>
       </section>
     </main>
   );

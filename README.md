@@ -19,6 +19,15 @@ See [`docs/internal-execution-api-bundle.md`](docs/internal-execution-api-bundle
 ## Jobs API reference
 See [`docs/jobs-api-reference.md`](docs/jobs-api-reference.md) for request/response examples for `execution_profile` and `internal_role_plan`.
 
+## Organization lifecycle policy
+See [`docs/organization-lifecycle-policy.md`](docs/organization-lifecycle-policy.md) for active/paused/archived organization behavior.
+
+## Brand lifecycle policy
+See [`docs/brand-lifecycle-policy.md`](docs/brand-lifecycle-policy.md) for active/paused/archived brand behavior.
+
+## Operator support and recovery
+See [`docs/operator-support-recovery.md`](docs/operator-support-recovery.md) for the platform-admin lookup workflow.
+
 ## Scope model
 See [`docs/scope-model.md`](docs/scope-model.md) for the reusable content scope contract and `scope=product` validation rule.
 

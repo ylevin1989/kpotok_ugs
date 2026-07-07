@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_accessible_memberships, get_current_user, get_organization_membership, require_organization_manager
 from app.api.v1.audience_segments import get_audience_segment_in_organization_brand
+from app.api.v1.brand_lifecycle import ensure_brand_content_writable
 from app.api.v1.briefs import get_brand_in_organization
 from app.api.v1.content_versions import create_content_version_record, next_content_version_number
 from app.api.v1.jobs import _job_read
@@ -129,7 +130,8 @@ def create_content_item(
     if organization is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Organization not found')
     ensure_content_organization_writable(organization)
-    get_brand_in_organization(db, payload.brand_id, payload.organization_id)
+    brand = get_brand_in_organization(db, payload.brand_id, payload.organization_id)
+    ensure_brand_content_writable(brand)
 
     content_plan = db.get(ContentPlan, payload.content_plan_id)
     if content_plan is None:
@@ -182,7 +184,8 @@ def generate_content_item(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Content plan not found')
     if content_plan.organization_id != content_item.organization_id or content_plan.brand_id != content_item.brand_id:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Content plan does not belong to content item and organization')
-    get_brand_in_organization(db, content_item.brand_id, content_item.organization_id)
+    brand = get_brand_in_organization(db, content_item.brand_id, content_item.organization_id)
+    ensure_brand_content_writable(brand)
     if content_item.product_id is not None:
         get_product_in_organization_brand(db, content_item.product_id, content_item.organization_id, content_item.brand_id)
     if content_item.audience_segment_id is not None:
@@ -203,6 +206,10 @@ def generate_content_item(
         title=build_content_generation_job_title(content_item),
         status='queued',
         execution_profile='general_content',
+        kind='content_generation',
+        target_brand_id=content_item.brand_id,
+        target_product_id=content_item.product_id,
+        target_content_item_id=content_item.id,
     )
     db.add(job)
     content_item.status = 'generating'

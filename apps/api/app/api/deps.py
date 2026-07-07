@@ -80,6 +80,12 @@ def require_worker_token(x_worker_token: str | None = Header(default=None)) -> s
     return x_worker_token
 
 
+def require_platform_admin(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.platform_role not in {PlatformRole.SUPER_ADMIN, PlatformRole.PLATFORM_ADMIN}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Platform admin access required')
+    return current_user
+
+
 def require_worker_context(
     _worker_token: str = Depends(require_worker_token),
     x_worker_id: str | None = Header(default=None),

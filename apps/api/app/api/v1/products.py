@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_accessible_memberships, get_organization_membership, require_organization_manager
 from app.api.v1.briefs import get_brand_in_organization
+from app.api.v1.brand_lifecycle import ensure_brand_content_writable
 from app.api.v1.jobs import _job_read
 from app.api.v1.organizations import ensure_content_organization_writable
 from app.db.models.brief import Brief
@@ -62,7 +63,8 @@ def create_product(
     if organization is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     ensure_content_organization_writable(organization)
-    get_brand_in_organization(db, payload.brand_id, payload.organization_id)
+    brand = get_brand_in_organization(db, payload.brand_id, payload.organization_id)
+    ensure_brand_content_writable(brand)
     product = Product(
         organization_id=payload.organization_id,
         brand_id=payload.brand_id,
@@ -104,6 +106,8 @@ def update_product(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     ensure_content_organization_writable(organization)
     updates = payload.model_dump(exclude_unset=True)
+    brand = get_brand_in_organization(db, product.brand_id, product.organization_id)
+    ensure_brand_content_writable(brand)
     for field, value in updates.items():
         setattr(product, field, value)
     try:
@@ -129,7 +133,8 @@ def generate_product_dna(
     if organization is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     ensure_content_organization_writable(organization)
-    get_brand_in_organization(db, product.brand_id, product.organization_id)
+    brand = get_brand_in_organization(db, product.brand_id, product.organization_id)
+    ensure_brand_content_writable(brand)
     brief = Brief(
         organization_id=product.organization_id,
         brand_id=product.brand_id,
@@ -144,6 +149,9 @@ def generate_product_dna(
         brief_id=brief.id,
         title=build_product_dna_job_title(product),
         status='queued',
+        kind='dna_generation',
+        target_brand_id=product.brand_id,
+        target_product_id=product.id,
     )
     db.add(job)
     db.commit()

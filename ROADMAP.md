@@ -142,6 +142,22 @@ Delivered scope:
 - `apps/web/app/dashboard/page.tsx` links to `/media-assets` and `/audience-segments` in addition to brands/products
 - `npm run build` for `apps/web` succeeds after the new workflow slices
 
+### Product Access / Onboarding Packet 01 — done
+Goal completed: add the first public access and onboarding layer on top of the live auth, membership, and organization APIs.
+
+Delivered scope:
+- `POST /api/v1/auth/register` now creates the minimal public registration entrypoint used by the browser UI
+- `apps/web/components/register-form.tsx` and `apps/web/app/register/page.tsx` add the registration form/page
+- `apps/web/app/login/page.tsx` now links to the registration page
+- `apps/web/app/onboarding/page.tsx` adds a guided onboarding screen that points users to the key product surfaces
+- `apps/web/app/members/page.tsx` adds organization selection, invite, role change, delete, and permission-event readback
+- `apps/web/lib/api.ts` now exposes register, organization member CRUD, and permission-event helpers for the browser client
+- `apps/web/app/dashboard/page.tsx` links to `/onboarding` and `/members`
+- `apps/web/app/members/page.tsx` now uses the real `loadSession()` helper instead of a missing `getSession()` helper, which restores the web production build
+- `apps/api/tests/test_packet199.py` covers registration, login-after-registration, and owner assignment of the new user into an organization
+- `npm run build` for `apps/web` succeeds after the access/onboarding/members packet
+- ROADMAP, current-task, and handoff are synchronized with the packet
+
 ### Product Core Packet 02 — done
 Goal completed: extend the product surface with update semantics so managers can edit product attributes in place while keeping org/brand scope and uniqueness rules intact.
 
@@ -227,6 +243,19 @@ Delivered scope:
 - `docs/billing.md` documents the current export/subscription/usage contract
 - `ROADMAP.md`, `docs/ai_context/04_current_task.md`, and `docs/ai_context/06_handoff.md` are synchronized with the packet
 - API regression and web production build remain green after the monetization packet
+
+### Jobs Routing Contract Packet 01 — done
+Goal completed: make job completion routing explicit with `job.kind` and typed target references.
+
+Delivered scope:
+- `apps/api/app/db/models/job.py` now stores `kind` plus typed target ids for brand, product, content item, and ticket routing
+- Job creation endpoints for content generation, brand DNA, product DNA, and ticket processing now set explicit `kind` and target refs on creation
+- `apps/api/app/api/v1/jobs.py` now routes completion by `job.kind` and only falls back to legacy brief JSON parsing for old manual jobs
+- `apps/api/alembic/versions/20260706_025_add_explicit_job_kind_and_targets.py` backfills historical jobs and adds the new columns/indexes
+- `apps/api/tests/test_packet198.py` covers explicit job kinds/targets plus completion resilience when brief JSON is mutated
+- `apps/web/lib/types.ts` now reflects the richer job read contract
+- `docs/jobs-routing.md` documents the new routing contract and legacy fallback behavior
+- API regression and web build remain green after the routing contract packet
 
 ### Content Items Packet 01 — done
 Goal completed: add the first execution-ready item surface under content plans, with plan linkage, scope-aware validation, and quality scoring.
@@ -866,13 +895,25 @@ Delivered scope:
 - `apps/api/tests/test_packet183.py` covers the new selector contract and the expanded API client signature
 - Web production build and full API regression remain green after the selector change
 
+### Operator Support / Recovery Packet 01 — done
+Goal completed: add the first operator recovery/support lookup slice so platform admins can search a user by email and inspect their memberships.
+
+Delivered scope:
+- `apps/api/app/api/v1/support.py` adds `GET /api/v1/support/users?email=...` for platform-admin-only user lookup
+- `apps/api/app/api/deps.py` adds the reusable `require_platform_admin()` gate
+- `apps/api/app/schemas/support.py` defines the support lookup response contract
+- `apps/web/app/support/page.tsx` adds the operator recovery/support lookup page
+- `apps/web/lib/api.ts` and `apps/web/lib/types.ts` add the support lookup client contract
+- `apps/web/app/dashboard/page.tsx` links platform admins to `/support`
+- `apps/api/tests/test_packet200.py` covers platform-admin lookup and non-admin access blocking
+- `uv run pytest -q` in `apps/api` and `npm run build` in `apps/web` remain green after the support packet
+
 ## Next roadmap
 ### Immediate next product work
-1. Operator and admin workflows for recovery / support scenarios
-2. Add stricter lifecycle semantics for org- and brand-level states
-3. Decide whether paused should have narrower write semantics than active
-4. Expand the Postgres-backed critical-path lane into broader API integration coverage and CI/runtime automation
-5. Continue public-facing documentation sync for any new operator workflows
+1. Add stricter lifecycle semantics for org- and brand-level states — done
+2. Decide whether paused should have narrower write semantics than active — done
+3. Expand the Postgres-backed critical-path lane into broader API integration coverage and CI/runtime automation — done
+4. Continue public-facing documentation sync for any new operator workflows — done
 
 ## Why this roadmap matters
 The work completed so far is not isolated CRUD. It creates the production-safe foundation required for every later feature:

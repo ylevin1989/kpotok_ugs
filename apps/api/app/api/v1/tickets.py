@@ -139,6 +139,11 @@ def process_ticket(
         title=build_ticket_processing_job_title(ticket, content_item),
         status='queued',
         execution_profile='general_content',
+        kind='ticket_processing',
+        target_brand_id=ticket.brand_id,
+        target_product_id=ticket.product_id,
+        target_content_item_id=content_item.id,
+        target_ticket_id=ticket.id,
     )
     db.add(job)
     ticket.status = 'in_progress'

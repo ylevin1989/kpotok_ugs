@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_accessible_memberships, get_organization_membership, require_organization_manager
 from app.api.v1.organizations import ensure_content_organization_writable
 from app.api.v1.jobs import _job_read
-from app.db.models.brand import Brand
+from app.db.models.brand import Brand, BrandStatus
 from app.db.models.brief import Brief
 from app.db.models.job import Job
 from app.db.models.organization import Organization, OrganizationMembership, OrganizationStatus
@@ -22,6 +22,27 @@ from app.schemas.brand import BrandCreate, BrandListResponse, BrandRead, BrandUp
 from app.schemas.job import JobRead
 
 router = APIRouter(prefix="/brands", tags=["brands"])
+
+
+def ensure_brand_writable(brand: Brand) -> None:
+    if brand.status == BrandStatus.ARCHIVED:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Archived brand is read-only")
+
+
+def ensure_brand_content_writable(brand: Brand) -> None:
+    if brand.status == BrandStatus.ARCHIVED:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Archived brand is read-only for content writes")
+    if brand.status == BrandStatus.PAUSED:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Paused brand is read-only for content writes")
+
+
+def ensure_archived_brand_transition_allowed(brand: Brand, updates: dict) -> None:
+    if brand.status != BrandStatus.ARCHIVED:
+        return
+    if set(updates.keys()) != {'status'}:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Archived brand is read-only")
+    if updates['status'] == BrandStatus.ARCHIVED:
+        return
 
 
 def ensure_brand_hard_delete_allowed(db: Session, brand: Brand) -> None:
@@ -62,6 +83,7 @@ def create_brand(
         organization_id=payload.organization_id,
         name=payload.name,
         slug=payload.slug,
+        status=payload.status or BrandStatus.ACTIVE,
     )
     db.add(brand)
     try:
@@ -87,6 +109,7 @@ def generate_brand_dna(
     if organization is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     ensure_content_organization_writable(organization)
+    ensure_brand_content_writable(brand)
     brief = Brief(
         organization_id=brand.organization_id,
         brand_id=brand.id,
@@ -101,6 +124,8 @@ def generate_brand_dna(
         brief_id=brief.id,
         title=build_brand_dna_job_title(brand),
         status='queued',
+        kind='dna_generation',
+        target_brand_id=brand.id,
     )
     db.add(job)
     db.commit()
@@ -137,6 +162,7 @@ def update_brand(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     ensure_content_organization_writable(organization)
     updates = payload.model_dump(exclude_unset=True)
+    ensure_archived_brand_transition_allowed(brand, updates)
     for field, value in updates.items():
         setattr(brand, field, value)
     try:
@@ -162,6 +188,7 @@ def delete_brand(
     if organization is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     ensure_content_organization_writable(organization)
+    ensure_brand_writable(brand)
     ensure_brand_hard_delete_allowed(db, brand)
     db.delete(brand)
     db.commit()

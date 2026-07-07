@@ -44,3 +44,20 @@ Implication:
 - Do not redesign the product as "OpenRouter instead of Hermes".
 - Do expose provider choice and fallback/routing at the model boundary.
 - Keep the existing Hermes/OpenRouter integration documented as a runtime/provider split, not a product fork.
+
+## 2026-07-07 — Postgres critical-path lane automation
+Decision: run the critical-path integration lane from the host workspace against the shared `cf-postgres` service instead of a bind-mounted throwaway test container.
+
+Chosen approach:
+- Use the host repo checkout and `uv run pytest` directly.
+- Reuse the already-running shared Postgres service (`cf-postgres`) for the lane DB.
+- Source credentials from the container environment instead of hardcoding role/password values.
+
+Rationale:
+- A bind-mounted throwaway container could not reliably see the workspace checkout in this environment.
+- The shared Postgres service is already healthy and matches the runtime the app uses locally.
+- This keeps the lane reproducible without depending on an extra ephemeral container layer.
+
+Implication:
+- Keep future critical-path automation host-based unless the Docker workspace-mount behavior is revisited.
+- Do not assume `postgres` is the DB role; read the running service’s env when wiring automation.

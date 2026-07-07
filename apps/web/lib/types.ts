@@ -24,6 +24,64 @@ export interface MeResponse {
   memberships: MembershipRead[];
 }
 
+export interface RegisterInput {
+  email: string;
+  password: string;
+  full_name?: string | null;
+}
+
+export interface OrganizationMemberRead {
+  id: string;
+  user_id: string;
+  email: string;
+  full_name: string | null;
+  role: string;
+  created_at: string;
+}
+
+export interface OrganizationMemberListResponse {
+  items: OrganizationMemberRead[];
+}
+
+export interface OrganizationMemberCreateInput {
+  email: string;
+  role: string;
+}
+
+export interface OrganizationMemberUpdateInput {
+  role: string;
+}
+
+export interface OrganizationPermissionEventRead {
+  id: string;
+  organization_id: string;
+  actor_user_id: string;
+  actor_membership_role: string;
+  action: string;
+  target_type: string;
+  target_id: string;
+  details: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface OrganizationPermissionEventListResponse {
+  items: OrganizationPermissionEventRead[];
+}
+
+export interface SupportMembershipRead {
+  organization_id: string;
+  organization_name: string;
+  organization_slug: string;
+  organization_status: string;
+  role: string;
+  created_at: string;
+}
+
+export interface SupportUserLookupResponse {
+  user: UserRead;
+  memberships: SupportMembershipRead[];
+}
+
 export interface OrganizationRead {
   id: string;
   name: string;
@@ -45,6 +103,7 @@ export interface BrandRead {
   organization_id: string;
   name: string;
   slug: string;
+  status: string;
   dna_json: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
@@ -335,6 +394,11 @@ export interface JobRead {
   organization_id: string;
   brand_id: string;
   brief_id: string;
+  kind: string;
+  target_brand_id: string | null;
+  target_product_id: string | null;
+  target_content_item_id: string | null;
+  target_ticket_id: string | null;
   scope: JobScopeRead;
   execution_profile: string;
   internal_role_plan: InternalRolePlanItemRead[];

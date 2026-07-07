@@ -12,6 +12,12 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    full_name: str | None = None
+
+
 class UserRead(BaseModel):
     id: UUID
     email: str

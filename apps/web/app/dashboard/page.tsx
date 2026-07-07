@@ -99,6 +99,7 @@ export default function DashboardPage() {
   const [isArtifactDownloading, setIsArtifactDownloading] = useState(false);
   const [isCreatingBrief, setIsCreatingBrief] = useState(false);
   const [isCreatingJob, setIsCreatingJob] = useState(false);
+  const isPlatformAdmin = data?.user.platform_role === 'super_admin' || data?.user.platform_role === 'platform_admin';
 
   useEffect(() => {
     const session = loadSession();
@@ -531,6 +532,9 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="row">
+          <Link className="secondary-button" href="/onboarding">
+            Onboarding
+          </Link>
           <Link className="secondary-button" href="/brands">
             Brands
           </Link>
@@ -549,6 +553,14 @@ export default function DashboardPage() {
           <Link className="secondary-button" href="/subscriptions">
             Subscriptions
           </Link>
+          <Link className="secondary-button" href="/members">
+            Members
+          </Link>
+          {isPlatformAdmin ? (
+            <Link className="secondary-button" href="/support">
+              Support
+            </Link>
+          ) : null}
           <button className="secondary-button" onClick={handleLogout} type="button">
             Выйти
           </button>
@@ -634,7 +646,7 @@ export default function DashboardPage() {
                 <div><dt>Organization</dt><dd>{selectedOrganization ? `${selectedOrganization.name} (${selectedOrganization.slug})` : '—'}</dd></div>
                 <div><dt>Organization role</dt><dd>{selectedOrganization?.membership_role ?? '—'}</dd></div>
                 <div><dt>Access mode</dt><dd>{canManageSelectedOrganization ? 'manager/owner write access' : 'reviewer read-only'}</dd></div>
-                <div><dt>Brand</dt><dd>{selectedBrand ? `${selectedBrand.name} (${selectedBrand.slug})` : '—'}</dd></div>
+                <div><dt>Brand</dt><dd>{selectedBrand ? `${selectedBrand.name} (${selectedBrand.slug}) · ${selectedBrand.status}` : '—'}</dd></div>
                 <div><dt>Brand count in scope</dt><dd>{brands.length}</dd></div>
               </dl>
 

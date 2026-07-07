@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_accessible_memberships, get_organization_membership, require_organization_manager
+from app.api.v1.brand_lifecycle import ensure_brand_content_writable
 from app.api.v1.organizations import ensure_content_organization_writable
 from app.db.models.brand import Brand
 from app.db.models.brief import Brief
@@ -52,7 +53,8 @@ def create_brief(
     if organization is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     ensure_content_organization_writable(organization)
-    get_brand_in_organization(db, payload.brand_id, payload.organization_id)
+    brand = get_brand_in_organization(db, payload.brand_id, payload.organization_id)
+    ensure_brand_content_writable(brand)
     brief = Brief(
         organization_id=payload.organization_id,
         brand_id=payload.brand_id,

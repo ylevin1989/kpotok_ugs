@@ -5,18 +5,20 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
-
 from app.api.deps import (
     get_accessible_memberships,
+    get_current_user,
     get_organization_membership,
     require_organization_manager,
     require_worker_context,
 )
+from app.api.v1.brand_lifecycle import ensure_brand_content_writable
 from app.api.v1.briefs import get_brand_in_organization
-from app.api.v1.organizations import ensure_content_organization_writable
 from app.api.v1.content_versions import create_content_version_record, next_content_version_number
+from app.api.v1.organizations import ensure_content_organization_writable
 from app.api.v1.quality_checks import create_quality_check_record
 from app.core.config import settings
+
 from app.db.enums import GenerationType
 from app.db.models.brief import Brief
 from app.db.models.job import Job
@@ -69,6 +71,14 @@ def _resolved_internal_role_plan(job: Job) -> tuple[str, list[dict]]:
         return job.execution_profile, persisted
     profile, plan = resolve_internal_role_plan(job.execution_profile)
     return profile, plan
+
+
+def _legacy_completion_requests(brief: Brief | None) -> tuple[dict | None, dict | None, dict | None]:
+    return (
+        parse_content_generation_request(brief),
+        parse_dna_generation_request(brief),
+        parse_ticket_processing_request(brief),
+    )
 
 
 def _write_execution_trace(job: Job, trace: dict | None) -> None:
@@ -728,6 +738,11 @@ def _job_read(job: Job) -> JobRead:
         'organization_id': job.organization_id,
         'brand_id': job.brand_id,
         'brief_id': job.brief_id,
+        'kind': job.kind,
+        'target_brand_id': job.target_brand_id,
+        'target_product_id': job.target_product_id,
+        'target_content_item_id': job.target_content_item_id,
+        'target_ticket_id': job.target_ticket_id,
         'scope': _base_scope(job),
         'execution_profile': execution_profile,
         'internal_role_plan': internal_role_plan,
@@ -917,7 +932,8 @@ def create_job(
     if organization is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     ensure_content_organization_writable(organization)
-    get_brand_in_organization(db, payload.brand_id, payload.organization_id)
+    brand = get_brand_in_organization(db, payload.brand_id, payload.organization_id)
+    ensure_brand_content_writable(brand)
     get_brief_in_organization_brand(db, payload.brief_id, payload.organization_id, payload.brand_id)
     execution_profile, internal_role_plan = resolve_internal_role_plan(payload.execution_profile)
     job = Job(
@@ -927,6 +943,11 @@ def create_job(
         title=payload.title,
         status="queued",
         execution_profile=execution_profile,
+        kind=payload.kind or 'manual',
+        target_brand_id=payload.target_brand_id,
+        target_product_id=payload.target_product_id,
+        target_content_item_id=payload.target_content_item_id,
+        target_ticket_id=payload.target_ticket_id,
     )
     _write_internal_role_plan(job, internal_role_plan)
     db.add(job)
@@ -1046,127 +1067,139 @@ def complete_job(
     job.output_artifact_size_bytes = payload.output_artifact_size_bytes if payload is not None else None
     job.output_artifact_etag = payload.output_artifact_etag if payload is not None else None
     brief = db.get(Brief, job.brief_id)
-    content_generation_request = parse_content_generation_request(brief)
-    dna_generation_request = parse_dna_generation_request(brief)
-    ticket_processing_request = parse_ticket_processing_request(brief)
-    if payload is not None and payload.output_text is not None and content_generation_request is not None:
-        target_content_item_id = UUID(content_generation_request['content_item_id'])
-        target_content_item = db.get(ContentItem, target_content_item_id)
-        if target_content_item is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Content item not found for generated job')
-        if target_content_item.organization_id != job.organization_id or target_content_item.brand_id != job.brand_id:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Generated content item does not belong to job scope')
-        version_number = next_content_version_number(db, target_content_item.id)
-        generation_type = GenerationType.INITIAL if version_number == 1 else GenerationType.REVISION
-        content_version = create_content_version_record(
-            db=db,
-            content_item=target_content_item,
-            organization_id=target_content_item.organization_id,
-            version_number=version_number,
-            body_markdown=payload.output_text,
-            structured_json={
-                'source_job_id': str(job.id),
-                'source_brief_id': str(job.brief_id),
-                'content_generation_request': content_generation_request,
-                'worker_output_artifact_key': artifact_key,
-                'worker_output_artifact_url': payload.output_artifact_url,
-            },
-            change_summary='Generated from content item job completion',
-            generation_type=generation_type,
-            generated_from_task_id=job.id,
-            created_by=None,
-            is_current=True,
-        )
-        create_quality_check_record(
-            db=db,
-            content_item=target_content_item,
-            organization_id=target_content_item.organization_id,
-            content_version=content_version,
-            current_user=None,
-            ticket=None,
-            generated_from_task_id=job.id,
-            checked_at=now,
-        )
-    elif payload is not None and payload.output_text is not None and dna_generation_request is not None:
-        generated_dna = json.loads(payload.output_text)
-        if not isinstance(generated_dna, dict):
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Generated DNA payload must be a JSON object')
-        dna_kind = dna_generation_request.get('kind')
-        if dna_kind == 'brand_dna_generation':
-            target_brand_id = UUID(dna_generation_request['brand_id'])
-            target_brand = db.get(Brand, target_brand_id)
-            if target_brand is None:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Brand not found for generated DNA job')
-            if target_brand.organization_id != job.organization_id:
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Generated brand does not belong to job scope')
-            target_brand.dna_json = {
-                'kind': dna_kind,
-                'source_job_id': str(job.id),
-                'source_brief_id': str(job.brief_id),
-                'dna': generated_dna,
-            }
-        elif dna_kind == 'product_dna_generation':
-            target_product_id = UUID(dna_generation_request['product_id'])
-            target_product = db.get(Product, target_product_id)
-            if target_product is None:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Product not found for generated DNA job')
-            if target_product.organization_id != job.organization_id or target_product.brand_id != job.brand_id:
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Generated product does not belong to job scope')
-            target_product.dna_json = {
-                'kind': dna_kind,
-                'source_job_id': str(job.id),
-                'source_brief_id': str(job.brief_id),
-                'dna': generated_dna,
-            }
-    elif payload is not None and payload.output_text is not None and ticket_processing_request is not None:
-        target_ticket_id = UUID(ticket_processing_request['ticket_id'])
-        target_ticket = db.get(Ticket, target_ticket_id)
-        if target_ticket is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Ticket not found for generated revision job')
-        if target_ticket.organization_id != job.organization_id or target_ticket.brand_id != job.brand_id:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Generated ticket does not belong to job scope')
-        target_content_item_id = UUID(ticket_processing_request['content_item_id'])
-        target_content_item = db.get(ContentItem, target_content_item_id)
-        if target_content_item is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Content item not found for generated ticket job')
-        if target_content_item.organization_id != job.organization_id or target_content_item.brand_id != job.brand_id:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Generated content item does not belong to job scope')
-        version_number = next_content_version_number(db, target_content_item.id)
-        content_version = create_content_version_record(
-            db=db,
-            content_item=target_content_item,
-            organization_id=target_content_item.organization_id,
-            version_number=version_number,
-            body_markdown=payload.output_text,
-            structured_json={
-                'source_job_id': str(job.id),
-                'source_brief_id': str(job.brief_id),
-                'source_ticket_id': str(target_ticket.id),
-                'ticket_type': target_ticket.type,
-                'ticket_reason_codes': list(target_ticket.reason_codes or []),
-                'ticket_comment': target_ticket.comment,
-                'ticket_processing_request': ticket_processing_request,
-                'worker_output_artifact_key': artifact_key,
-                'worker_output_artifact_url': payload.output_artifact_url,
-            },
-            change_summary='Generated from ticket processing job completion',
-            generation_type=GenerationType.REVISION,
-            generated_from_task_id=job.id,
-            created_by=None,
-            is_current=True,
-        )
-        create_quality_check_record(
-            db=db,
-            content_item=target_content_item,
-            organization_id=target_content_item.organization_id,
-            content_version=content_version,
-            current_user=None,
-            ticket=target_ticket,
-            generated_from_task_id=job.id,
-            checked_at=now,
-        )
-        target_ticket.status = 'resolved'
-        target_ticket.resolved_at = now
+    legacy_content_generation_request, legacy_dna_generation_request, legacy_ticket_processing_request = _legacy_completion_requests(brief)
+    if payload is not None and payload.output_text is not None:
+        if job.kind == 'content_generation' or (job.kind == 'manual' and legacy_content_generation_request is not None):
+            content_generation_request = legacy_content_generation_request or {}
+            target_content_item_id = job.target_content_item_id or UUID(content_generation_request['content_item_id'])
+            target_content_item = db.get(ContentItem, target_content_item_id)
+            if target_content_item is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Content item not found for generated job')
+            if target_content_item.organization_id != job.organization_id or target_content_item.brand_id != job.brand_id:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Generated content item does not belong to job scope')
+            version_number = next_content_version_number(db, target_content_item.id)
+            generation_type = GenerationType.INITIAL if version_number == 1 else GenerationType.REVISION
+            content_version = create_content_version_record(
+                db=db,
+                content_item=target_content_item,
+                organization_id=target_content_item.organization_id,
+                version_number=version_number,
+                body_markdown=payload.output_text,
+                structured_json={
+                    'source_job_id': str(job.id),
+                    'source_brief_id': str(job.brief_id),
+                    'content_generation_request': content_generation_request,
+                    'worker_output_artifact_key': artifact_key,
+                    'worker_output_artifact_url': payload.output_artifact_url,
+                },
+                change_summary='Generated from content item job completion',
+                generation_type=generation_type,
+                generated_from_task_id=job.id,
+                created_by=None,
+                is_current=True,
+            )
+            create_quality_check_record(
+                db=db,
+                content_item=target_content_item,
+                organization_id=target_content_item.organization_id,
+                content_version=content_version,
+                current_user=None,
+                ticket=None,
+                generated_from_task_id=job.id,
+                checked_at=now,
+            )
+        elif job.kind == 'dna_generation' or (job.kind == 'manual' and legacy_dna_generation_request is not None):
+            generated_dna = json.loads(payload.output_text)
+            if not isinstance(generated_dna, dict):
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Generated DNA payload must be a JSON object')
+            target_brand_id = job.target_brand_id or (UUID(legacy_dna_generation_request['brand_id']) if legacy_dna_generation_request and legacy_dna_generation_request.get('brand_id') else None)
+            target_product_id = job.target_product_id or (UUID(legacy_dna_generation_request['product_id']) if legacy_dna_generation_request and legacy_dna_generation_request.get('product_id') else None)
+            if target_brand_id is not None and target_product_id is not None:
+                target_product = db.get(Product, target_product_id)
+                if target_product is None:
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Product not found for generated DNA job')
+                if target_product.organization_id != job.organization_id or target_product.brand_id != job.brand_id:
+                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Generated product does not belong to job scope')
+                target_product.dna_json = {
+                    'kind': 'product_dna_generation',
+                    'source_job_id': str(job.id),
+                    'source_brief_id': str(job.brief_id),
+                    'dna': generated_dna,
+                }
+            elif target_product_id is not None:
+                target_product = db.get(Product, target_product_id)
+                if target_product is None:
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Product not found for generated DNA job')
+                if target_product.organization_id != job.organization_id or target_product.brand_id != job.brand_id:
+                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Generated product does not belong to job scope')
+                target_product.dna_json = {
+                    'kind': 'product_dna_generation',
+                    'source_job_id': str(job.id),
+                    'source_brief_id': str(job.brief_id),
+                    'dna': generated_dna,
+                }
+            elif target_brand_id is not None:
+                target_brand = db.get(Brand, target_brand_id)
+                if target_brand is None:
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Brand not found for generated DNA job')
+                if target_brand.organization_id != job.organization_id:
+                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Generated brand does not belong to job scope')
+                target_brand.dna_json = {
+                    'kind': 'brand_dna_generation',
+                    'source_job_id': str(job.id),
+                    'source_brief_id': str(job.brief_id),
+                    'dna': generated_dna,
+                }
+        elif job.kind == 'ticket_processing' or (job.kind == 'manual' and legacy_ticket_processing_request is not None):
+            ticket_processing_request = legacy_ticket_processing_request or {}
+            target_ticket_id = job.target_ticket_id or UUID(ticket_processing_request['ticket_id'])
+            target_content_item_id = job.target_content_item_id or UUID(ticket_processing_request['content_item_id'])
+            target_ticket = db.get(Ticket, target_ticket_id)
+            if target_ticket is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Ticket not found for generated revision job')
+            if target_ticket.organization_id != job.organization_id or target_ticket.brand_id != job.brand_id:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Generated ticket does not belong to job scope')
+            target_content_item = db.get(ContentItem, target_content_item_id)
+            if target_content_item is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Content item not found for generated ticket job')
+            if target_content_item.organization_id != job.organization_id or target_content_item.brand_id != job.brand_id:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Generated content item does not belong to job scope')
+            version_number = next_content_version_number(db, target_content_item.id)
+            content_version = create_content_version_record(
+                db=db,
+                content_item=target_content_item,
+                organization_id=target_content_item.organization_id,
+                version_number=version_number,
+                body_markdown=payload.output_text,
+                structured_json={
+                    'source_job_id': str(job.id),
+                    'source_brief_id': str(job.brief_id),
+                    'source_ticket_id': str(target_ticket.id),
+                    'ticket_type': target_ticket.type,
+                    'ticket_reason_codes': list(target_ticket.reason_codes or []),
+                    'ticket_comment': target_ticket.comment,
+                    'ticket_processing_request': ticket_processing_request,
+                    'worker_output_artifact_key': artifact_key,
+                    'worker_output_artifact_url': payload.output_artifact_url,
+                },
+                change_summary='Generated from ticket processing job completion',
+                generation_type=GenerationType.REVISION,
+                generated_from_task_id=job.id,
+                created_by=None,
+                is_current=True,
+            )
+            create_quality_check_record(
+                db=db,
+                content_item=target_content_item,
+                organization_id=target_content_item.organization_id,
+                content_version=content_version,
+                current_user=None,
+                ticket=target_ticket,
+                generated_from_task_id=job.id,
+                checked_at=now,
+            )
+            target_ticket.status = 'resolved'
+            target_ticket.resolved_at = now
     trace = _ensure_execution_trace(job)
     _append_stage(trace, 'completed')
     _begin_stage(trace, 'completed', now)

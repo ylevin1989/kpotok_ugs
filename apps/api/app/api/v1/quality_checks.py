@@ -5,6 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_accessible_memberships, get_current_user, get_organization_membership, require_organization_manager
+from app.api.v1.brand_lifecycle import ensure_brand_content_writable
+from app.api.v1.briefs import get_brand_in_organization
 from app.api.v1.organizations import ensure_content_organization_writable
 from app.db.models.brand import Brand
 from app.db.models.content_item import ContentItem
@@ -166,6 +168,8 @@ def create_quality_check(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Content item not found')
     if content_item.organization_id != payload.organization_id:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Content item does not belong to organization')
+    brand = get_brand_in_organization(db, content_item.brand_id, content_item.organization_id)
+    ensure_brand_content_writable(brand)
     ticket = _resolve_ticket(db, content_item=content_item, organization_id=payload.organization_id, payload=payload)
     content_version = _resolve_content_version(db, content_item=content_item, organization_id=payload.organization_id, payload=payload, ticket=ticket)
     quality_check = create_quality_check_record(

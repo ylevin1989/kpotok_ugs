@@ -8,14 +8,19 @@ from app.db.base import Base
 
 
 class Job(Base):
-    __tablename__ = "jobs"
+    __tablename__ = 'jobs'
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
-    brand_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("brands.id", ondelete="CASCADE"), nullable=False, index=True)
-    brief_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("briefs.id", ondelete="CASCADE"), nullable=False, index=True)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('organizations.id', ondelete='CASCADE'), nullable=False, index=True)
+    brand_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('brands.id', ondelete='CASCADE'), nullable=False, index=True)
+    brief_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('briefs.id', ondelete='CASCADE'), nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String(64), nullable=False, default='manual', index=True)
+    target_brand_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey('brands.id', ondelete='CASCADE'), nullable=True, index=True)
+    target_product_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey('products.id', ondelete='CASCADE'), nullable=True, index=True)
+    target_content_item_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey('content_items.id', ondelete='CASCADE'), nullable=True, index=True)
+    target_ticket_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey('tickets.id', ondelete='CASCADE'), nullable=True, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default='queued')
     worker_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     attempt_count: Mapped[int] = mapped_column(Integer(), nullable=False, default=0)
     lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)

@@ -5,6 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_accessible_memberships, get_current_user, get_organization_membership, require_organization_manager
+from app.api.v1.briefs import get_brand_in_organization
+from app.api.v1.brand_lifecycle import ensure_brand_content_writable
 from app.db.enums import GenerationType
 from app.db.models.content_item import ContentItem
 from app.db.models.content_version import ContentVersion
@@ -100,6 +102,8 @@ def create_content_version(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     ensure_content_organization_writable(organization)
     content_item = get_content_item_in_organization(db, payload.content_item_id, payload.organization_id)
+    brand = get_brand_in_organization(db, content_item.brand_id, content_item.organization_id)
+    ensure_brand_content_writable(brand)
     existing = db.execute(
         select(ContentVersion).where(
             ContentVersion.organization_id == payload.organization_id,
@@ -144,6 +148,8 @@ def promote_content_version(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     ensure_content_organization_writable(organization)
     content_item = get_content_item_in_organization(db, content_version.content_item_id, content_version.organization_id)
+    brand = get_brand_in_organization(db, content_item.brand_id, content_item.organization_id)
+    ensure_brand_content_writable(brand)
     if not content_version.is_current:
         db.query(ContentVersion).filter(
             ContentVersion.organization_id == content_version.organization_id,

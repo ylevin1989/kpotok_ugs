@@ -15,6 +15,12 @@ import type {
   LoginResponse,
   MeResponse,
   MediaAssetCreateInput,
+  OrganizationMemberCreateInput,
+  OrganizationMemberListResponse,
+  OrganizationMemberRead,
+  OrganizationMemberUpdateInput,
+  OrganizationPermissionEventListResponse,
+  RegisterInput,
   MediaAssetListResponse,
   MediaAssetRead,
   OrganizationListResponse,
@@ -25,6 +31,7 @@ import type {
   SubscriptionCreateInput,
   SubscriptionListResponse,
   SubscriptionRead,
+  SupportUserLookupResponse,
   UsageRecordListResponse,
 } from './types';
 
@@ -79,8 +86,85 @@ export function getMe(accessToken: string): Promise<MeResponse> {
   });
 }
 
+export function register(payload: RegisterInput): Promise<LoginResponse> {
+  return apiFetch<LoginResponse>('/api/v1/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export function getOrganizations(accessToken: string): Promise<OrganizationListResponse> {
   return apiFetch<OrganizationListResponse>('/api/v1/organizations', {
+    method: 'GET',
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function getOrganizationMembers(
+  accessToken: string,
+  organizationId: string,
+): Promise<OrganizationMemberListResponse> {
+  return apiFetch<OrganizationMemberListResponse>(`/api/v1/organizations/${organizationId}/members`, {
+    method: 'GET',
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function createOrganizationMember(
+  accessToken: string,
+  organizationId: string,
+  payload: OrganizationMemberCreateInput,
+): Promise<OrganizationMemberRead> {
+  return apiFetch<OrganizationMemberRead>(`/api/v1/organizations/${organizationId}/members`, {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateOrganizationMember(
+  accessToken: string,
+  organizationId: string,
+  memberId: string,
+  payload: OrganizationMemberUpdateInput,
+): Promise<OrganizationMemberRead> {
+  return apiFetch<OrganizationMemberRead>(`/api/v1/organizations/${organizationId}/members/${memberId}`, {
+    method: 'PATCH',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteOrganizationMember(
+  accessToken: string,
+  organizationId: string,
+  memberId: string,
+): Promise<void> {
+  return fetch(`${getApiBaseUrl()}/api/v1/organizations/${organizationId}/members/${memberId}`, {
+    method: 'DELETE',
+    headers: {
+      ...authHeaders(accessToken),
+    },
+  }).then(async (response) => {
+    if (!response.ok) {
+      throw new Error(await readErrorMessage(response));
+    }
+  });
+}
+
+export function getOrganizationPermissionEvents(
+  accessToken: string,
+  organizationId: string,
+): Promise<OrganizationPermissionEventListResponse> {
+  return apiFetch<OrganizationPermissionEventListResponse>(`/api/v1/organizations/${organizationId}/permission-events`, {
+    method: 'GET',
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function lookupSupportUser(accessToken: string, email: string): Promise<SupportUserLookupResponse> {
+  const params = new URLSearchParams({ email });
+  return apiFetch<SupportUserLookupResponse>(`/api/v1/support/users?${params.toString()}`, {
     method: 'GET',
     headers: authHeaders(accessToken),
   });

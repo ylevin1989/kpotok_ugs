@@ -1,16 +1,14 @@
 # Handoff
 
 ## Summary for the next packet
-- The product workspace now covers `/brands`, `/products`, `/media-assets`, `/audience-segments`, `/content-plans`, and `/subscriptions`.
-- Dashboard links to the full product workspace set and still serves as the scope-selection hub.
-- Export, subscriptions, usage accounting, and limit enforcement are implemented and verified.
+- The public docs now expose the lifecycle and operator-support workflows at the top level.
+- `README.md` links to organization lifecycle, brand lifecycle, and operator support docs.
+- The brand lifecycle doc is now the public reference for paused-brand metadata-vs-content write behavior.
 
 ## Do next
-- Move on to the next roadmap item after `stage4-export-monetization`.
-- Reuse the current org/brand/product scope model, content plans, and billing usage surfaces.
-- Keep any new product work aligned with the dashboard scope selection.
+- Wait for the next user-directed roadmap step.
+- Keep any future public docs aligned with the API guards and the shared `brand_lifecycle.py` helpers.
 
 ## Do not do
-- Do not reopen the export/subscription packet unless a new issue appears.
-- Do not remove the current product list/edit flow or the media/audience/content-plan/subscription screens.
-- Do not expand jobs/admin yet.
+- Do not rename the lifecycle statuses without an explicit roadmap update.
+- Do not diverge the public docs from the actual API behavior.

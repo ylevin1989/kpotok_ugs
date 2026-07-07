@@ -172,6 +172,7 @@ export default function BrandsPage() {
                       <div className="row-value">{brand.name}</div>
                       <div className="row-label">{brand.slug}</div>
                     </div>
+                    <span className="pill">{brand.status}</span>
                     <span className="pill">{brand.dna_json ? 'DNA ready' : 'DNA empty'}</span>
                   </div>
                   <p className="row-label">Created {formatDateTime(brand.created_at)}</p>

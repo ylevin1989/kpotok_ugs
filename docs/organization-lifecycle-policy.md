@@ -37,6 +37,7 @@ This document is the human-readable reference for the current organization lifec
 - `apps/api/app/api/v1/tickets.py`
 - `apps/api/app/api/v1/jobs.py`
 - `apps/api/app/api/v1/products.py`
+- Companion brand policy: `docs/brand-lifecycle-policy.md`
 
 ## Current regression coverage
 - `apps/api/tests/test_packet17.py`

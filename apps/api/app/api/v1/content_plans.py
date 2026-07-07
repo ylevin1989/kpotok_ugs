@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_accessible_memberships, get_organization_membership, require_organization_manager
 from app.api.v1.audience_segments import get_audience_segment_in_organization_brand
+from app.api.v1.brand_lifecycle import ensure_brand_content_writable
 from app.api.v1.briefs import get_brand_in_organization
 from app.api.v1.organizations import ensure_content_organization_writable
 from app.api.v1.products import get_product_in_organization_brand
@@ -137,7 +138,8 @@ def create_content_plan(
     if organization is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     ensure_content_organization_writable(organization)
-    get_brand_in_organization(db, payload.brand_id, payload.organization_id)
+    brand = get_brand_in_organization(db, payload.brand_id, payload.organization_id)
+    ensure_brand_content_writable(brand)
     if payload.product_id is not None:
         get_product_in_organization_brand(db, payload.product_id, payload.organization_id, payload.brand_id)
     if payload.audience_segment_id is not None:
@@ -185,6 +187,7 @@ def generate_content_plans(
         error_detail='Monthly content-plan limit exceeded',
     )
     brand = get_brand_in_organization(db, payload.brand_id, payload.organization_id)
+    ensure_brand_content_writable(brand)
     product: Product | None = None
     if payload.product_id is not None:
         product = get_product_in_organization_brand(db, payload.product_id, payload.organization_id, payload.brand_id)
