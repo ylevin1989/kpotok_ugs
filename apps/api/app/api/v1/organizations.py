@@ -1,6 +1,6 @@
 import json
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -12,6 +12,7 @@ from app.db.models.organization import MembershipRole, Organization, Organizatio
 from app.db.models.organization_permission_event import OrganizationPermissionEvent
 from app.db.models.user import User
 from app.db.session import get_db
+from app.domain.audit import record_audit
 from app.schemas.organization import (
     OrganizationCreate,
     OrganizationListResponse,
@@ -26,6 +27,15 @@ from app.schemas.organization import (
 )
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
+
+
+def _request_ip(request: Request) -> str | None:
+    forwarded_for = request.headers.get('x-forwarded-for')
+    if forwarded_for:
+        return forwarded_for.split(',')[0].strip()
+    if request.client is not None:
+        return request.client.host
+    return None
 
 MEMBERSHIP_CREATE_ROLE_MATRIX: dict[MembershipRole, set[MembershipRole]] = {
     MembershipRole.CLIENT_OWNER: {
@@ -166,6 +176,7 @@ def get_organization(
 def update_organization(
     organization_id: UUID,
     payload: OrganizationUpdate,
+    request: Request,
     memberships: list[OrganizationMembership] = Depends(get_accessible_memberships),
     db: Session = Depends(get_db),
 ) -> OrganizationRead:
@@ -191,6 +202,16 @@ def update_organization(
             target_type='organization',
             target_id=str(organization_id),
             details={'from': old_status.value, 'to': updates['status'].value},
+        )
+        record_audit(
+            db,
+            actor_user_id=membership.user_id,
+            organization_id=organization_id,
+            action='organization_status_changed',
+            entity_type='organization',
+            entity_id=str(organization_id),
+            metadata={'from': old_status.value, 'to': updates['status'].value},
+            ip=_request_ip(request),
         )
     try:
         db.commit()
@@ -436,6 +457,7 @@ def update_organization_member(
     organization_id: UUID,
     membership_id: UUID,
     payload: OrganizationMemberUpdate,
+    request: Request,
     memberships: list[OrganizationMembership] = Depends(get_accessible_memberships),
     db: Session = Depends(get_db),
 ) -> OrganizationMemberRead:
@@ -450,15 +472,26 @@ def update_organization_member(
     ensure_membership_role_transition_allowed(organization_id, actor_membership, membership, payload.role, db)
     old_role = membership.role
     membership.role = payload.role
-    _record_permission_event(
-        db,
-        organization_id=organization_id,
-        actor_membership=actor_membership,
-        action='membership_role_changed',
-        target_type='membership',
-        target_id=str(membership.id),
-        details={'from': old_role.value, 'to': payload.role.value},
-    )
+    if old_role != payload.role:
+        _record_permission_event(
+            db,
+            organization_id=organization_id,
+            actor_membership=actor_membership,
+            action='membership_role_changed',
+            target_type='membership',
+            target_id=str(membership.id),
+            details={'from': old_role.value, 'to': payload.role.value},
+        )
+        record_audit(
+            db,
+            actor_user_id=actor_membership.user_id,
+            organization_id=organization_id,
+            action='organization_member_role_changed',
+            entity_type='membership',
+            entity_id=str(membership.id),
+            metadata={'from': old_role.value, 'to': payload.role.value},
+            ip=_request_ip(request),
+        )
     db.commit()
     db.refresh(membership)
     user = db.get(User, membership.user_id)

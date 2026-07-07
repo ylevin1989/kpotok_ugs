@@ -1,3 +1,4 @@
+from app.db.models.audit_log import AuditLog
 from app.db.models.audience_segment import AudienceSegment
 from app.db.models.brand import Brand
 from app.db.models.brief import Brief
@@ -17,6 +18,7 @@ from app.db.models.usage_record import UsageRecord
 from app.db.models.user import PlatformRole, User
 
 __all__ = [
+    "AuditLog",
     "User",
     "PlatformRole",
     "Organization",

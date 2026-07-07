@@ -80,3 +80,23 @@ Implication:
 - Future export extensions should stay additive on the `exports` table/API rather than replacing the persisted artifact contract.
 - Download handlers must reject artifact keys outside the export's expected tenant prefix.
 - Any future async export pipeline must preserve the same approved-only and tenant-scoped output rules.
+
+## 2026-07-07 — Admin + Audit Packet B contract
+Decision: add a single platform-facing admin surface plus a shared `audit_logs` table for sensitive write actions, but do not add `PlatformRole.developer` in this packet.
+
+Chosen approach:
+- Introduce `audit_logs` as a general platform audit table with `actor_user_id`, nullable `organization_id`, `action`, `entity_type`, `entity_id`, `metadata_json`, and optional `ip`.
+- Use a shared `record_audit(...)` helper instead of route-local logging logic.
+- Audit only sensitive writes in this packet: membership role changes, organization status changes, subscription upserts, and manual admin job retry/cancel.
+- Expose a platform-admin-only `/api/v1/admin` surface for clients, jobs, tickets, internal-review content, usage, and audit-log readback.
+- Keep access restricted to existing `super_admin` / `platform_admin` roles; defer `developer` until a separate read-only permission matrix is explicitly designed.
+
+Rationale:
+- The platform needs one place to inspect cross-tenant operational state and one durable audit stream for operator-sensitive writes.
+- Reusing one helper keeps future audit expansion consistent and avoids fragmented per-route implementations.
+- Adding `developer` now would widen the platform role contract without a settled read-only boundary, which is riskier than deferring it.
+
+Implication:
+- Future sensitive platform writes should call `record_audit(...)` instead of inventing new audit storage.
+- Read/list endpoints remain non-audited unless a later requirement explicitly changes that policy.
+- If `developer` is introduced later, it should be additive and read-only by default rather than piggybacking on `require_platform_admin`.

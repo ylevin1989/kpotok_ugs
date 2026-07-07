@@ -4,6 +4,16 @@
 Content Factory is the control plane and application layer built on top of an existing Hermes runtime. Its job is to provide a production-backed multi-organization product surface with clear org boundaries, membership roles, brand scoping, and later workflow/content execution on top of that foundation.
 
 ## Current status
+### Admin + Audit Packet B — done
+- `apps/api/app/db/models/audit_log.py` and `apps/api/alembic/versions/20260707_028_create_audit_logs_table.py` add the platform audit log surface
+- `apps/api/alembic/versions/20260707_029_create_organization_permission_events_table.py` backfills the previously-missing permission-event table so live Postgres matches the existing org audit path
+- `apps/api/app/domain/audit.py` centralizes `record_audit(...)` for sensitive write actions
+- `apps/api/app/api/v1/admin.py` adds platform-admin-only clients/jobs/tickets/content-review/usage/audit readback plus manual job retry/cancel controls
+- `apps/api/app/api/v1/organizations.py` now mirrors membership-role changes and organization-status changes into `audit_logs`
+- `apps/api/app/api/v1/subscriptions.py` now audits subscription upserts
+- `apps/api/tests/test_packet205.py` covers admin readback, retry/cancel, audit persistence, and `client_* -> 403`
+- The Postgres critical-path lane now includes the admin/audit packet and remains green
+
 ### Exports Packet 01 — done
 - `apps/api/app/db/models/export.py` defines the tenant-scoped `exports` model with persisted artifact metadata and `created_by` linkage
 - `apps/api/alembic/versions/20260707_027_create_exports_table.py` upgrades the live schema with the `exports` table plus `export_format` / `export_status` enums

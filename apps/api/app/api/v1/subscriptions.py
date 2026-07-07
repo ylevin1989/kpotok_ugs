@@ -1,15 +1,17 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_accessible_memberships, get_organization_membership, require_organization_manager
+from app.api.deps import get_accessible_memberships, get_current_user, get_organization_membership, require_organization_manager
 from app.api.v1.organizations import ensure_content_organization_writable
 from app.db.models.organization import Organization, OrganizationMembership
 from app.db.models.subscription import Subscription
 from app.db.models.usage_record import UsageRecord
+from app.db.models.user import User
 from app.db.session import get_db
+from app.domain.audit import record_audit
 from app.domain.billing import get_or_create_subscription, current_usage_summary
 from app.schemas.subscription import (
     SubscriptionCreate,
@@ -20,6 +22,15 @@ from app.schemas.subscription import (
 )
 
 router = APIRouter(prefix='/subscriptions', tags=['subscriptions'])
+
+
+def _request_ip(request: Request) -> str | None:
+    forwarded_for = request.headers.get('x-forwarded-for')
+    if forwarded_for:
+        return forwarded_for.split(',')[0].strip()
+    if request.client is not None:
+        return request.client.host
+    return None
 
 
 @router.get('', response_model=SubscriptionListResponse)
@@ -36,7 +47,9 @@ def list_subscriptions(
 @router.post('', response_model=SubscriptionRead, status_code=status.HTTP_201_CREATED)
 def upsert_subscription(
     payload: SubscriptionCreate,
+    request: Request,
     memberships: list[OrganizationMembership] = Depends(get_accessible_memberships),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> SubscriptionRead:
     require_organization_manager(payload.organization_id, memberships)
@@ -58,6 +71,7 @@ def upsert_subscription(
             current_period_end=payload.current_period_end,
         )
         db.add(subscription)
+        action = 'subscription_upserted'
     else:
         subscription.plan_name = payload.plan_name
         subscription.monthly_content_plan_limit = payload.monthly_content_plan_limit
@@ -65,6 +79,25 @@ def upsert_subscription(
         subscription.is_active = payload.is_active
         subscription.current_period_start = payload.current_period_start
         subscription.current_period_end = payload.current_period_end
+        action = 'subscription_upserted'
+    db.flush()
+    record_audit(
+        db,
+        actor_user_id=current_user.id,
+        organization_id=payload.organization_id,
+        action=action,
+        entity_type='subscription',
+        entity_id=str(subscription.id),
+        metadata={
+            'plan_name': payload.plan_name,
+            'monthly_content_plan_limit': payload.monthly_content_plan_limit,
+            'monthly_export_limit': payload.monthly_export_limit,
+            'is_active': payload.is_active,
+            'current_period_start': payload.current_period_start.isoformat(),
+            'current_period_end': payload.current_period_end.isoformat(),
+        },
+        ip=_request_ip(request),
+    )
     db.commit()
     db.refresh(subscription)
     return SubscriptionRead.model_validate(subscription, from_attributes=True)
