@@ -156,7 +156,7 @@ def generate_product_dna(
     db.add(job)
     db.commit()
     db.refresh(job)
-    return _job_read(job)
+    return _job_read(db, job)
 
 
 @router.get("/{product_id}", response_model=ProductRead)

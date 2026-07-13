@@ -1,18 +1,15 @@
 # Handoff
 
 ## Summary for the next packet
-- Admin + Audit Packet B is deployed and live-verified on the public API.
-- Live schema is now at Alembic head `20260707_029`; migration `029` backfills the previously-missing `organization_permission_events` table used by the org membership/status audit path.
-- `audit_logs` is the new canonical platform audit table for sensitive write actions across org role/status changes, subscription changes, and admin job retry/cancel.
-- `GET /api/v1/admin/*` now gives platform admins readback across clients, jobs, tickets, internal-review content, usage, and audit logs.
-- `PlatformRole.developer` was intentionally not added in this packet; the platform-only admin surface remains restricted to `super_admin` and `platform_admin`.
+- Content-generation context propagation is now implemented end-to-end for the current packet.
+- `Brief.content` carries the rich nested generation payload, `JobRead` now surfaces `brief_content`, and the worker role prompt injects that payload for the LLM.
+- Scope mismatch on product-scoped generation is covered by tests and returns `409`.
+- Full API/worker regression is green after the packet.
 
 ## Do next
-- Keep future admin packets additive on the `/api/v1/admin` surface.
-- Reuse `record_audit(...)` for any new sensitive platform write action.
-- If `developer` is introduced later, define a separate read-only permission matrix instead of silently broadening `require_platform_admin`.
+- Continue with the next user-directed packet only after deploy / live verification if requested.
+- Keep future generation packets appending context to the same brief/job contract rather than reintroducing ID-only handoffs.
 
 ## Do not do
-- Do not replace `audit_logs` with ad-hoc per-route logging.
-- Do not log read-only admin/list endpoints into `audit_logs`.
-- Do not broaden platform-admin routes to client roles.
+- Do not fall back to ID-only prompts for content generation.
+- Do not add a separate parallel context store unless the user explicitly requests an architectural change.

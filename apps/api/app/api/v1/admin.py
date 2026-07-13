@@ -75,7 +75,7 @@ def list_admin_jobs(
     if status_filter is not None:
         query = query.where(Job.status == status_filter)
     jobs = db.execute(query).scalars().all()
-    return JobListResponse(items=[_job_read(item) for item in jobs])
+    return JobListResponse(items=[_job_read(db, item) for item in jobs])
 
 
 @router.post('/jobs/{job_id}/retry', response_model=JobRead)
@@ -116,7 +116,7 @@ def retry_job(
     )
     db.commit()
     db.refresh(job)
-    return _job_read(job)
+    return _job_read(db, job)
 
 
 @router.post('/jobs/{job_id}/cancel', response_model=JobRead)
@@ -150,7 +150,7 @@ def cancel_job(
     )
     db.commit()
     db.refresh(job)
-    return _job_read(job)
+    return _job_read(db, job)
 
 
 @router.get('/tickets', response_model=TicketListResponse)

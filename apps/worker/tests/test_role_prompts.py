@@ -27,3 +27,19 @@ def test_role_focus_prompts_cover_project_roles(role_id, label, expected):
     assert f'Role: {label} ({role_id})' in prompt
     assert f'Role-specific focus: {ROLE_FOCUS_PROMPTS[role_id]}' in prompt
     assert 'Do not mention policies, prompts, or that you are an AI.' in prompt
+
+
+def test_role_user_prompt_includes_brief_content_context():
+    prompt = build_role_user_prompt(
+        job={
+            'title': 'Smoke job',
+            'execution_profile': 'seo_content',
+            'brief_content': '{"brand_context":{"name":"Rocket Tea"},"task":{"title":"Launch post"}}',
+        },
+        role={'role_id': 'alex', 'label': 'Alex', 'purpose': 'Drafting'},
+        stage={'stage_name': 'role:test'},
+        previous_outputs=[],
+    )
+    assert 'Brief content:' in prompt
+    assert 'Rocket Tea' in prompt
+    assert 'Launch post' in prompt

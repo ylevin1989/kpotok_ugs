@@ -81,6 +81,24 @@ Implication:
 - Download handlers must reject artifact keys outside the export's expected tenant prefix.
 - Any future async export pipeline must preserve the same approved-only and tenant-scoped output rules.
 
+## 2026-07-13 — content-generation context propagation
+Decision: carry rich content-generation context through the existing brief/job contract, then surface the same brief payload in `JobRead` and the worker role prompt.
+
+Chosen approach:
+- Build the generation context in `Brief.content` as a nested JSON payload with brand, product, audience, channel, and task sections.
+- Expose `brief_content` in the job read model so worker clients do not need a separate brief fetch before executing.
+- Inject the brief payload directly into the worker role prompt so the LLM sees the actual context instead of only IDs and the job title.
+
+Rationale:
+- The brief is already the canonical content-generation handoff object, so enriching it keeps the pipeline consistent.
+- Adding the content to `JobRead` avoids an extra API round-trip in the worker path.
+- Prompt-time injection makes the context available to the model without duplicating domain lookups in the worker.
+
+Implication:
+- Future generation packets should keep the brief payload as the source of truth for LLM context.
+- If new context sections are added later, they should be appended to the same brief payload and surfaced through the same job-read contract.
+- Worker prompt changes should prefer consuming the brief payload rather than re-deriving the same information from multiple endpoints.
+
 ## 2026-07-07 — Admin + Audit Packet B contract
 Decision: add a single platform-facing admin surface plus a shared `audit_logs` table for sensitive write actions, but do not add `PlatformRole.developer` in this packet.
 

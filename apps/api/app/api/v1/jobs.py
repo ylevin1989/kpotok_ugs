@@ -731,13 +731,15 @@ def _trace_summary(trace: dict) -> dict[str, object]:
     }
 
 
-def _job_read(job: Job) -> JobRead:
+def _job_read(db: Session, job: Job) -> JobRead:
     execution_profile, internal_role_plan = _resolved_internal_role_plan(job)
+    brief = db.get(Brief, job.brief_id)
     payload = {
         'id': job.id,
         'organization_id': job.organization_id,
         'brand_id': job.brand_id,
         'brief_id': job.brief_id,
+        'brief_content': brief.content if brief is not None else None,
         'kind': job.kind,
         'target_brand_id': job.target_brand_id,
         'target_product_id': job.target_product_id,
@@ -899,7 +901,7 @@ def claim_next_job(
     _claim_job(job, worker_id, claim_type=claim_type, reclaimed_from_worker_id=previous_worker_id)
     db.commit()
     db.refresh(job)
-    return _job_read(job)
+    return _job_read(db, job)
 
 
 @router.get("", response_model=JobListResponse)
@@ -918,7 +920,7 @@ def list_jobs(
         .where(Job.organization_id == organization_id, Job.brand_id == brand_id, Job.brief_id == brief_id)
         .order_by(Job.created_at.asc())
     ).scalars().all()
-    return JobListResponse(items=[_job_read(item) for item in items])
+    return JobListResponse(items=[_job_read(db, item) for item in items])
 
 
 @router.post("", response_model=JobRead, status_code=status.HTTP_201_CREATED)
@@ -953,7 +955,7 @@ def create_job(
     db.add(job)
     db.commit()
     db.refresh(job)
-    return _job_read(job)
+    return _job_read(db, job)
 
 
 @router.get("/{job_id}", response_model=JobRead)
@@ -964,7 +966,7 @@ def get_job(
 ) -> JobRead:
     job = _get_job_or_404(db, job_id)
     get_organization_membership(job.organization_id, memberships)
-    return _job_read(job)
+    return _job_read(db, job)
 
 
 @router.get("/{job_id}/artifact")
@@ -991,7 +993,7 @@ def claim_job(
     _claim_job(job, worker_id)
     db.commit()
     db.refresh(job)
-    return _job_read(job)
+    return _job_read(db, job)
 
 
 @router.post("/{job_id}/heartbeat", response_model=JobRead)
@@ -1035,7 +1037,7 @@ def heartbeat_job(
         _write_execution_trace(job, trace)
     db.commit()
     db.refresh(job)
-    return _job_read(job)
+    return _job_read(db, job)
 
 
 @router.post("/{job_id}/complete", response_model=JobRead)
@@ -1241,7 +1243,7 @@ def complete_job(
     job.last_stage = 'completed'
     db.commit()
     db.refresh(job)
-    return _job_read(job)
+    return _job_read(db, job)
 
 
 @router.post("/{job_id}/fail", response_model=JobRead)
@@ -1308,4 +1310,4 @@ def fail_job(
     job.last_stage = 'failed'
     db.commit()
     db.refresh(job)
-    return _job_read(job)
+    return _job_read(db, job)

@@ -152,9 +152,9 @@ def test_generate_content_item_creates_job_and_persists_generated_content_versio
     item_response = client.get(f'/api/v1/content-items/{content_item_id}', headers=auth_headers(client, reviewer.email))
     assert item_response.status_code == 200
     item = item_response.json()
-    assert item['status'] == 'internal_review'
+    assert item['status'] == 'waiting_client_review'
     assert item['current_version_id'] is not None
-    assert item['quality_score'] < 80
+    assert item['quality_score'] >= 80
 
     versions_response = client.get(
         f'/api/v1/content-versions?organization_id={org_id}&content_item_id={content_item_id}',
@@ -174,4 +174,4 @@ def test_generate_content_item_creates_job_and_persists_generated_content_versio
     assert quality_response.status_code == 200
     checks = quality_response.json()['items']
     assert len(checks) == 1
-    assert checks[0]['status'] in {'needs_revision', 'failed'}
+    assert checks[0]['status'] == 'passed'

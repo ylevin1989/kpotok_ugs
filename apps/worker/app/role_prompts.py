@@ -56,6 +56,9 @@ def build_role_user_prompt(*, job: dict[str, Any], role: dict[str, Any], stage: 
     purpose = _clean(role.get('purpose'), 'No purpose provided')
     profile = _clean(job.get('execution_profile'), 'unknown')
     focus = ROLE_FOCUS_PROMPTS.get(role_id, DEFAULT_ROLE_FOCUS)
+    brief_content = _clean(job.get('brief_content'))
+
+    brief_section = f'Brief content:\n{brief_content}\n\n' if brief_content else 'Brief content: not provided\n\n'
 
     prior_lines: list[str] = []
     for previous in previous_outputs:
@@ -72,6 +75,7 @@ def build_role_user_prompt(*, job: dict[str, Any], role: dict[str, Any], stage: 
         f'Role purpose: {purpose}\n'
         f'Role-specific focus: {focus}\n'
         f'Stage: {_clean(stage.get("stage_name"), "role-stage")}\n\n'
+        f'{brief_section}'
         f'Previous role outputs:\n{prior_section}\n\n'
         'Write the next role contribution in markdown. '
         'Use a compact structure with a short headline and 2-4 bullets or short paragraphs. '

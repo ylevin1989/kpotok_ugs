@@ -149,4 +149,4 @@ def process_ticket(
     ticket.status = 'in_progress'
     db.commit()
     db.refresh(job)
-    return _job_read(job)
+    return _job_read(db, job)

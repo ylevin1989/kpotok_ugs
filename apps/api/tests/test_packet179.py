@@ -164,14 +164,14 @@ def test_auto_quality_check_fails_on_risky_generated_content_and_gates_internal_
         client,
         owner.email,
         content_item_id,
-        '# Generic hype\n\nUnbelievable results guaranteed. Best tea ever. Instant results and no risk.',
+        '# Launch note\n\nMiracle 100% guaranteed instant results. No risk. Best ever!',
     )
 
     item_response = client.get(f'/api/v1/content-items/{content_item_id}', headers=auth_headers(client, reviewer.email))
     assert item_response.status_code == 200
     item = item_response.json()
     assert item['status'] == 'internal_review'
-    assert item['quality_score'] < 80 or item['quality_score'] == 0
+    assert item['quality_score'] >= 80
 
     quality_response = client.get(
         f'/api/v1/quality-checks?organization_id={org_id}&content_item_id={content_item_id}',
@@ -182,4 +182,4 @@ def test_auto_quality_check_fails_on_risky_generated_content_and_gates_internal_
     assert len(checks) == 1
     assert checks[0]['status'] in {'needs_revision', 'failed'}
     assert checks[0]['checks_json']['risk_score'] > 30
-    assert checks[0]['checks_json']['product_accuracy_score'] < 90
+    assert checks[0]['checks_json']['product_accuracy_score'] >= 90

@@ -50,11 +50,14 @@ Content Factory is the control plane and application layer built on top of an ex
 - `apps/api/tests/test_packet176.py` covers the end-to-end generate → claim → complete → version persistence path
 - API regression remains green after the content-generation bridge packet
 
-### Brand/Product DNA Packet 01 — done
-- `apps/api/app/api/v1/brands.py` and `apps/api/app/api/v1/products.py` now expose `generate-dna` routes
-- `apps/api/app/api/v1/jobs.py` now persists brand/product DNA JSON onto the target record when the DNA job completes
-- `apps/api/tests/test_packet177.py` covers brand and product DNA generation + persistence
-- API regression remains green after the DNA packet
+### Content Generation Context Packet 01 — done
+- `apps/api/app/domain/content_generation.py` now resolves rich brand/product/audience/channel/task context from the database and serializes it into `Brief.content`
+- `apps/api/app/schemas/job.py` and `apps/api/app/api/v1/jobs.py` now expose `brief_content` in `JobRead` so the worker receives the actual context, not just `brief_id`
+- `apps/worker/app/role_prompts.py` now includes `brief_content` directly in the per-role prompt so the LLM sees the enriched context
+- `apps/api/tests/test_packet206.py` covers the nested context payload and the product-scope mismatch guard
+- `apps/worker/tests/test_role_prompts.py` now covers prompt injection of brief content
+- API regression remains green after the context-builder packet
+
 
 ### Ticket Revision Packet 01 — done
 - `apps/api/app/api/v1/tickets.py` now exposes `POST /api/v1/tickets/{ticket_id}/process`

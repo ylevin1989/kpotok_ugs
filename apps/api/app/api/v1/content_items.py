@@ -195,7 +195,7 @@ def generate_content_item(
         organization_id=content_item.organization_id,
         brand_id=content_item.brand_id,
         title=build_content_generation_brief_title(content_item),
-        content=build_content_generation_brief_content(content_item, content_plan),
+        content=build_content_generation_brief_content(db, content_item, content_plan),
     )
     db.add(brief)
     db.flush()
@@ -215,7 +215,7 @@ def generate_content_item(
     content_item.status = 'generating'
     db.commit()
     db.refresh(job)
-    return _job_read(job)
+    return _job_read(db, job)
 
 
 @router.get('/{content_item_id}', response_model=ContentItemRead)
