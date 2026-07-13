@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 COMMON_SYSTEM_PROMPT = (
@@ -56,8 +57,12 @@ def build_role_user_prompt(*, job: dict[str, Any], role: dict[str, Any], stage: 
     purpose = _clean(role.get('purpose'), 'No purpose provided')
     profile = _clean(job.get('execution_profile'), 'unknown')
     focus = ROLE_FOCUS_PROMPTS.get(role_id, DEFAULT_ROLE_FOCUS)
-    brief_content = _clean(job.get('brief_content'))
+    context_payload = job.get('context')
+    context_section = ''
+    if isinstance(context_payload, dict) and context_payload:
+        context_section = f"Generation context:\n{json.dumps(context_payload, ensure_ascii=False, indent=2, sort_keys=True)}\n\n"
 
+    brief_content = _clean(job.get('brief_content'))
     brief_section = f'Brief content:\n{brief_content}\n\n' if brief_content else 'Brief content: not provided\n\n'
 
     prior_lines: list[str] = []
@@ -75,6 +80,7 @@ def build_role_user_prompt(*, job: dict[str, Any], role: dict[str, Any], stage: 
         f'Role purpose: {purpose}\n'
         f'Role-specific focus: {focus}\n'
         f'Stage: {_clean(stage.get("stage_name"), "role-stage")}\n\n'
+        f'{context_section}'
         f'{brief_section}'
         f'Previous role outputs:\n{prior_section}\n\n'
         'Write the next role contribution in markdown. '

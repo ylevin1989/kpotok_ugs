@@ -1,28 +1,22 @@
 # Current task
 
 ## Task ID
-content-generation-context-packet-c1
+claim-time-generation-context-packet-c2
 
 ## Status
 Completed.
 
 ## What shipped
-- `app/domain/content_generation.py` now resolves rich generation context from the database and serializes it into a nested brief payload with:
-  - `brand_context`
-  - `product_context`
-  - `audience_context`
-  - `channel`
-  - `task`
-- `app/api/v1/content_items.py` now passes `db` into the brief-content builder.
-- `app/schemas/job.py` and `app/api/v1/jobs.py` now expose `brief_content` alongside `brief_id` in `JobRead` so workers receive the actual brief payload, not just the reference ID.
-- `apps/worker/app/role_prompts.py` now injects `brief_content` into the role prompt so the LLM sees the generated context.
-- Added `tests/test_packet206.py` for the rich context builder and scope mismatch guard.
-- Added/updated worker prompt coverage in `apps/worker/tests/test_role_prompts.py`.
+- `apps/api/app/schemas/job.py` now includes `context: dict[str, Any] | None` on `JobRead`.
+- `apps/api/app/api/v1/jobs.py` now fills `context` from parsed `Brief.content` so `claim-next`, `claim`, and other job readbacks expose the generation payload.
+- `apps/worker/app/role_prompts.py` now prefers `context` and falls back to `brief_content` when building the role prompt.
+- Added `apps/api/tests/test_packet207.py` to cover claim-time context propagation through `claim-next` and `claim`.
+- Expanded `apps/worker/tests/test_role_prompts.py` to prove the worker prompt prefers the parsed generation context.
 
 ## Verification
-- `uv run pytest -q tests/test_packet206.py`
+- `uv run pytest -q tests/test_packet207.py`
 - `uv run pytest -q tests/test_role_prompts.py`
 - `uv run pytest -q`
 
 ## Next packet
-- Wait for the next user-directed roadmap step after deploy verification.
+- Wait for the next user-directed step after deploy and live verification.

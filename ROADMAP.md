@@ -51,12 +51,20 @@ Content Factory is the control plane and application layer built on top of an ex
 - API regression remains green after the content-generation bridge packet
 
 ### Content Generation Context Packet 01 — done
-- `apps/api/app/domain/content_generation.py` now resolves rich brand/product/audience/channel/task context from the database and serializes it into `Brief.content`
-- `apps/api/app/schemas/job.py` and `apps/api/app/api/v1/jobs.py` now expose `brief_content` in `JobRead` so the worker receives the actual context, not just `brief_id`
-- `apps/worker/app/role_prompts.py` now includes `brief_content` directly in the per-role prompt so the LLM sees the enriched context
-- `apps/api/tests/test_packet206.py` covers the nested context payload and the product-scope mismatch guard
-- `apps/worker/tests/test_role_prompts.py` now covers prompt injection of brief content
-- API regression remains green after the context-builder packet
+|- `apps/api/app/domain/content_generation.py` now resolves rich brand/product/audience/channel/task context from the database and serializes it into `Brief.content`
+|- `apps/api/app/schemas/job.py` and `apps/api/app/api/v1/jobs.py` now expose `brief_content` in `JobRead` so the worker receives the actual context, not just `brief_id`
+|- `apps/worker/app/role_prompts.py` now includes `brief_content` directly in the per-role prompt so the LLM sees the enriched context
+|- `apps/api/tests/test_packet206.py` covers the nested context payload and the product-scope mismatch guard
+|- `apps/worker/tests/test_role_prompts.py` now covers prompt injection of brief content
+|- API regression remains green after the context-builder packet
+
+### Claim-Time Generation Context Packet 02 — done
+|- `apps/api/app/schemas/job.py` now exposes `context` on `JobRead` in addition to `brief_content`
+|- `apps/api/app/api/v1/jobs.py` now populates `context` from parsed `Brief.content` so claim-next/claim return the full generation payload
+|- `apps/worker/app/role_prompts.py` now prefers `context` when present and falls back to `brief_content`
+|- `apps/api/tests/test_packet207.py` covers claim-next and claim propagation of the generation payload
+|- `apps/worker/tests/test_role_prompts.py` covers prompt preference for the parsed context payload
+|- API/worker regression remains green after the claim-time context packet
 
 
 ### Ticket Revision Packet 01 — done

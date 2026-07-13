@@ -1,10 +1,10 @@
 # Handoff
 
 ## Summary for the next packet
-- Content-generation context propagation is now implemented end-to-end for the current packet.
-- `Brief.content` carries the rich nested generation payload, `JobRead` now surfaces `brief_content`, and the worker role prompt injects that payload for the LLM.
-- Scope mismatch on product-scoped generation is covered by tests and returns `409`.
-- Full API/worker regression is green after the packet.
+- Claim-time generation context propagation is now implemented end-to-end for the current packet.
+- `JobRead` now exposes both `brief_content` and parsed `context`, and the worker role prompt prefers `context` when it is available.
+- `claim-next` and `claim` are covered by tests so workers receive the real generation payload at claim time.
+- Full API and worker regression is green after the packet.
 
 ## Do next
 - Continue with the next user-directed packet only after deploy / live verification if requested.

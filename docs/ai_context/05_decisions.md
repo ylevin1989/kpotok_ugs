@@ -82,7 +82,7 @@ Implication:
 - Any future async export pipeline must preserve the same approved-only and tenant-scoped output rules.
 
 ## 2026-07-13 — content-generation context propagation
-Decision: carry rich content-generation context through the existing brief/job contract, then surface the same brief payload in `JobRead` and the worker role prompt.
+Decision: carry rich content-generation context through the existing brief/job contract, surface the same brief payload in `JobRead`, and keep it available at claim time for the worker role prompt.
 
 Chosen approach:
 - Build the generation context in `Brief.content` as a nested JSON payload with brand, product, audience, channel, and task sections.

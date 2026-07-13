@@ -43,3 +43,25 @@ def test_role_user_prompt_includes_brief_content_context():
     assert 'Brief content:' in prompt
     assert 'Rocket Tea' in prompt
     assert 'Launch post' in prompt
+
+
+def test_role_user_prompt_prioritizes_generation_context_payload():
+    prompt = build_role_user_prompt(
+        job={
+            'title': 'Smoke job',
+            'execution_profile': 'seo_content',
+            'context': {
+                'kind': 'content_item_generation',
+                'brand_context': {'name': 'Rocket Tea'},
+                'task': {'title': 'Launch post'},
+            },
+            'brief_content': 'fallback brief text',
+        },
+        role={'role_id': 'alex', 'label': 'Alex', 'purpose': 'Drafting'},
+        stage={'stage_name': 'role:test'},
+        previous_outputs=[],
+    )
+    assert 'Generation context:' in prompt
+    assert 'content_item_generation' in prompt
+    assert 'Rocket Tea' in prompt
+    assert 'Brief content:' in prompt

@@ -740,6 +740,7 @@ def _job_read(db: Session, job: Job) -> JobRead:
         'brand_id': job.brand_id,
         'brief_id': job.brief_id,
         'brief_content': brief.content if brief is not None else None,
+        'context': parse_content_generation_request(brief),
         'kind': job.kind,
         'target_brand_id': job.target_brand_id,
         'target_product_id': job.target_product_id,
