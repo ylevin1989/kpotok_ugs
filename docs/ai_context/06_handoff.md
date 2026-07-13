@@ -1,14 +1,15 @@
 # Handoff
 
 ## Summary for the next packet
-- Claim-time generation context propagation is now implemented end-to-end for the current packet.
-- `JobRead` now exposes both `brief_content` and parsed `context`, and the worker role prompt prefers `context` when it is available.
-- `claim-next` and `claim` are covered by tests so workers receive the real generation payload at claim time.
-- Full API and worker regression is green after the packet.
+- Content-generation prompt enrichment is now implemented end-to-end.
+- `build_role_user_prompt(...)` carries the full content brief context: brand tone/positioning, allowed/forbidden claims, product facts, audience pains/goals/objections, channel, and goal.
+- `COMMON_SYSTEM_PROMPT` now enforces provided-context-only generation and `forbidden_claims` compliance.
+- Final-stage worker outputs now map to `content_version.structured_json` with `body_markdown` stored separately.
+- API and worker regressions are green after the packet.
 
 ## Do next
 - Continue with the next user-directed packet only after deploy / live verification if requested.
-- Keep future generation packets appending context to the same brief/job contract rather than reintroducing ID-only handoffs.
+- Keep future generation packets appending context to the same brief/job contract rather than reintroducing thin prompts.
 
 ## Do not do
 - Do not fall back to ID-only prompts for content generation.

@@ -41,6 +41,7 @@ def _resolved_worker_stages(settings, job: dict) -> list[dict[str, object]]:
                 'progress_percent': progress_percent,
                 'progress_message': f'Executing internal role {label}',
                 'transition_tag': f'internal-role:{role_id}',
+                'is_final': index == role_count,
                 'worker_metadata': {
                     'role_id': role_id,
                     'role_label': label,
@@ -157,7 +158,10 @@ def process_job(settings, client: WorkerApiClient, job: dict, skip_first_renew: 
                 ),
             })
     if role_aware:
-        result = _compile_role_specific_output(job, stages, role_outputs)
+        if job.get('kind') == 'content_generation' and role_outputs:
+            result = str(role_outputs[-1].get('output') or '').strip()
+        else:
+            result = _compile_role_specific_output(job, stages, role_outputs)
     else:
         result = f"stub-output-for-{_slugify_title(job['title'])}"
     artifact = _artifact_reference(settings, job, result, _role_output_slug(job) if role_aware else None)

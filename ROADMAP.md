@@ -66,6 +66,13 @@ Content Factory is the control plane and application layer built on top of an ex
 |- `apps/worker/tests/test_role_prompts.py` covers prompt preference for the parsed context payload
 |- API/worker regression remains green after the claim-time context packet
 
+### Content Generation Output Contract Packet 03 — done
+|- `apps/worker/app/role_prompts.py` now instructs the final role to emit `content_version.structured_json` with `{title,text,short_text,cta,visual_task,image_prompt,risks}` plus `body_markdown`
+|- `apps/api/app/api/v1/jobs.py` now parses that JSON payload and persists `structured_json` / `body_markdown` separately on `content_versions`
+|- `apps/api/tests/test_packet208.py` covers the structured output persistence path
+|- `apps/worker/tests/test_role_prompts.py` covers the full context-rich prompt and final output contract
+|- API/worker regression remains green after the structured-output packet
+
 
 ### Ticket Revision Packet 01 — done
 - `apps/api/app/api/v1/tickets.py` now exposes `POST /api/v1/tickets/{ticket_id}/process`

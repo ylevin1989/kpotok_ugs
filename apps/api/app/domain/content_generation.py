@@ -146,6 +146,25 @@ def parse_content_generation_request(brief: Brief | None) -> dict[str, Any] | No
     return payload
 
 
+def parse_content_generation_output(output_text: str | None) -> tuple[dict[str, Any] | None, str | None]:
+    if output_text is None:
+        return None, None
+    try:
+        payload = json.loads(output_text)
+    except json.JSONDecodeError:
+        return None, output_text.strip() or None
+    if not isinstance(payload, dict):
+        return None, output_text.strip() or None
+    body_markdown = payload.get('body_markdown')
+    if not isinstance(body_markdown, str) or not body_markdown.strip():
+        return None, output_text.strip() or None
+    required_fields = ('title', 'text', 'short_text', 'cta', 'visual_task', 'image_prompt', 'risks')
+    structured_json = {field: payload.get(field) for field in required_fields}
+    if any(structured_json[field] is None for field in required_fields):
+        return None, output_text.strip() or None
+    return structured_json, body_markdown.strip()
+
+
 def parse_uuid(value: Any) -> UUID | None:
     if not isinstance(value, str) or not value:
         return None
