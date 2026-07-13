@@ -23,6 +23,15 @@ def build_brand_dna_request(brand: Brand) -> dict[str, Any]:
         'organization_id': str(brand.organization_id),
         'name': brand.name,
         'slug': brand.slug,
+        'positioning': brand.positioning,
+        'tone_of_voice': brand.tone_of_voice,
+        'mission': brand.mission,
+        'values': brand.values,
+        'forbidden_claims': brand.forbidden_claims,
+        'allowed_claims': brand.allowed_claims,
+        'competitors': brand.competitors,
+        'good_examples': brand.good_examples,
+        'bad_examples': brand.bad_examples,
     }
 
 

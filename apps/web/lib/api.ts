@@ -3,6 +3,9 @@ import type {
   AudienceSegmentListResponse,
   AudienceSegmentRead,
   BrandListResponse,
+  BrandCreateInput,
+  BrandUpdateInput,
+  BrandRead,
   BriefListResponse,
   BriefRead,
   ContentPlanExportInput,
@@ -175,6 +178,22 @@ export function getBrands(accessToken: string, organizationId: string): Promise<
   return apiFetch<BrandListResponse>(`/api/v1/brands?${params.toString()}`, {
     method: 'GET',
     headers: authHeaders(accessToken),
+  });
+}
+
+export function createBrand(accessToken: string, payload: BrandCreateInput): Promise<BrandRead> {
+  return apiFetch<BrandRead>('/api/v1/brands', {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateBrand(accessToken: string, brandId: string, payload: BrandUpdateInput): Promise<BrandRead> {
+  return apiFetch<BrandRead>(`/api/v1/brands/${brandId}`, {
+    method: 'PATCH',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
   });
 }
 

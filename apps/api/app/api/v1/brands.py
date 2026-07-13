@@ -84,6 +84,15 @@ def create_brand(
         name=payload.name,
         slug=payload.slug,
         status=payload.status or BrandStatus.ACTIVE,
+        positioning=payload.positioning,
+        tone_of_voice=payload.tone_of_voice,
+        mission=payload.mission,
+        values=payload.values,
+        forbidden_claims=payload.forbidden_claims,
+        allowed_claims=payload.allowed_claims,
+        competitors=payload.competitors,
+        good_examples=payload.good_examples,
+        bad_examples=payload.bad_examples,
     )
     db.add(brand)
     try:
