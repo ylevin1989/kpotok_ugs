@@ -1,16 +1,15 @@
 # Handoff
 
 ## Summary for the next packet
-- Content-generation prompt enrichment is now implemented end-to-end.
-- `build_role_user_prompt(...)` carries the full content brief context: brand tone/positioning, allowed/forbidden claims, product facts, audience pains/goals/objections, channel, and goal.
-- `COMMON_SYSTEM_PROMPT` now enforces provided-context-only generation and `forbidden_claims` compliance.
-- Final-stage worker outputs now map to `content_version.structured_json` with `body_markdown` stored separately.
-- API and worker regressions are green after the packet.
+- The new `/production-flow` page is now the guided entrypoint for the live product workspaces.
+- It shows current org/brand scope, counts for products/segments/briefs/plans/jobs, and a recommended next action.
+- Dashboard and onboarding now link into the flow so users can start from one obvious place.
+- The actual create/edit actions still live in the dedicated domain screens, which keeps the coordinator thin and avoids duplicate workflow state.
 
 ## Do next
 - Continue with the next user-directed packet only after deploy / live verification if requested.
-- Keep future generation packets appending context to the same brief/job contract rather than reintroducing thin prompts.
+- If the user wants a deeper workflow upgrade, extend the coordinator with richer recommendations rather than reintroducing a second write surface.
 
 ## Do not do
-- Do not fall back to ID-only prompts for content generation.
-- Do not add a separate parallel context store unless the user explicitly requests an architectural change.
+- Do not fall back to a separate workflow backend unless the product explicitly needs it.
+- Do not duplicate the existing create/edit forms inside the coordinator page.

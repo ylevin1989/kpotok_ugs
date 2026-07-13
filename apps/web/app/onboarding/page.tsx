@@ -26,10 +26,10 @@ const steps = [
     label: 'Media',
   },
   {
-    title: '5. Собрать контент-план и пройти quality-check',
-    description: 'План, карточка материала, версии и тикеты — конечный рабочий цикл.',
-    href: '/content-plans',
-    label: 'Plans',
+    title: '5. Открыть production flow и пройти весь маршрут',
+    description: 'Production flow показывает следующий шаг, counts по сущностям и прямые ссылки на нужный экран.',
+    href: '/production-flow',
+    label: 'Flow',
   },
 ];
 

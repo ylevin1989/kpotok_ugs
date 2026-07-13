@@ -547,8 +547,8 @@ export default function DashboardPage() {
           <Link className="secondary-button" href="/audience-segments">
             Audiences
           </Link>
-          <Link className="secondary-button" href="/content-plans">
-            Plans
+          <Link className="secondary-button" href="/production-flow">
+            Production Flow
           </Link>
           <Link className="secondary-button" href="/subscriptions">
             Subscriptions

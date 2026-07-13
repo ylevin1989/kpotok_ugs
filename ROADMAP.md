@@ -196,6 +196,17 @@ Delivered scope:
 - `npm run build` for `apps/web` succeeds after the access/onboarding/members packet
 - ROADMAP, current-task, and handoff are synchronized with the packet
 
+### Production Flow Packet 01 — done
+Goal completed: add a unified coordinator screen that guides the user through the live product workspaces instead of forcing them to remember the route graph.
+
+Delivered scope:
+- `apps/web/app/production-flow/page.tsx` adds a guided flow screen that summarizes the current organization/brand scope, counts the available products/segments/briefs/plans/jobs, and suggests the next recommended action
+- `apps/web/app/dashboard/page.tsx` now links to `/production-flow` as a primary navigation target
+- `apps/web/app/onboarding/page.tsx` now routes the final onboarding step to the production flow
+- The coordinator is intentionally thin: it reuses the existing domain workspaces for the actual create/edit actions instead of duplicating them on a new surface
+- `npm run build` for `apps/web` succeeds after the production-flow packet
+- Live browser smoke on `https://app.uno-ai.pw/production-flow` confirms the new route renders after login
+
 ### Product Core Packet 02 — done
 Goal completed: extend the product surface with update semantics so managers can edit product attributes in place while keeping org/brand scope and uniqueness rules intact.
 

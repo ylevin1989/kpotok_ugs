@@ -81,6 +81,22 @@ Implication:
 - Download handlers must reject artifact keys outside the export's expected tenant prefix.
 - Any future async export pipeline must preserve the same approved-only and tenant-scoped output rules.
 
+## 2026-07-13 — Production flow UX boundary
+Decision: implement the new production flow as a thin client-side coordinator that reuses the existing dashboard, brands, products, audience-segments, media-assets, and content-plans workspaces instead of introducing a separate backend workflow model.
+
+Chosen approach:
+- Add a dedicated `/production-flow` page that summarizes scope, counts, and the next recommended action.
+- Keep creation/editing actions in the existing domain-specific screens so we do not duplicate state or invent a parallel workflow store.
+- Surface the new route from onboarding and dashboard as the guided entrypoint for the end-to-end path.
+
+Rationale:
+- The backend already exposes the necessary product/domain slices; the missing piece was user guidance and a single place to start.
+- A thin coordinator page is lower risk than a new workflow engine and keeps the UI additive.
+- Reusing existing screens avoids drifting contracts between two different frontends for the same actions.
+
+Implication:
+- Future UX packets can expand the coordinator with smarter recommendations and status, but should continue delegating the actual writes to the established workspaces unless the product explicitly requires a new workflow backend.
+
 ## 2026-07-13 — content-generation context propagation
 Decision: carry rich content-generation context through the existing brief/job contract, surface the same brief payload in `JobRead`, and keep it available at claim time for the worker role prompt.
 

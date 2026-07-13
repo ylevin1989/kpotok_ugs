@@ -1,24 +1,22 @@
 # Current task
 
 ## Task ID
-content-generation-output-contract-packet-c3
+web-production-flow-packet-01
 
 ## Status
 Completed.
 
 ## What shipped
-- `apps/worker/app/role_prompts.py` now includes brand tone/positioning, allowed/forbidden claims, product facts, audience pains/goals/objections, channel, and goal in `build_role_user_prompt(...)`.
-- `COMMON_SYSTEM_PROMPT` now enforces the provided-context-only rule, no invented facts, and `forbidden_claims` compliance.
-- Final-stage worker output now targets `content_version.structured_json` with `{title, text, short_text, cta, visual_task, image_prompt, risks}` plus `body_markdown`.
-- `apps/api/app/api/v1/jobs.py` now parses final content-generation JSON into `structured_json` and stores `body_markdown` separately on `content_versions`.
-- Added `apps/api/tests/test_packet208.py` to cover structured output persistence.
-- Expanded `apps/worker/tests/test_role_prompts.py` to cover the full context-rich prompt and final output contract.
+- Added `/production-flow` as a guided client-side coordinator for the existing product workspaces.
+- The new page shows the current organization/brand scope, counts for products/segments/briefs/plans/jobs, and the next recommended action.
+- Dashboard and onboarding now link to the production flow as the primary entrypoint.
+- The production flow reuses the established domain screens for the actual writes instead of introducing a separate workflow backend.
 
 ## Verification
-- `uv run pytest -q tests/test_packet207.py tests/test_packet208.py`
-- `uv run pytest -q tests/test_role_prompts.py`
-- `uv run pytest -q` in `apps/api`
-- `uv run pytest -q` in `apps/worker`
+- `npm run build` in `apps/web`
+- `docker compose build cf-web`
+- `docker compose up -d --force-recreate cf-web`
+- Live browser smoke on `https://app.uno-ai.pw/production-flow` after login
 
 ## Next packet
 - Wait for the next user-directed step after deploy / live verification if requested.
