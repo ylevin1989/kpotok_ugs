@@ -21,7 +21,7 @@ export function LoginForm() {
     try {
       const response = await login(email, password);
       saveSession({ accessToken: response.access_token, userEmail: response.user.email });
-      router.replace('/dashboard');
+      router.replace('/onboarding');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось выполнить вход');
     } finally {
