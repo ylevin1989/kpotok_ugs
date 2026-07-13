@@ -2,37 +2,31 @@ import Link from 'next/link';
 
 const steps = [
   {
-    title: '1. Войти или зарегистрироваться',
-    description: 'Создай аккаунт или зайди в существующий, чтобы получить доступ к организации и её рабочему scope.',
-    href: '/register',
-    label: 'Регистрация',
-  },
-  {
-    title: '2. Открыть dashboard и выбрать organization',
+    title: '1. Открыть dashboard и выбрать organization',
     description: 'Dashboard подтягивает доступные memberships и даёт выбрать рабочий контекст.',
     href: '/dashboard',
     label: 'Dashboard',
   },
   {
-    title: '3. Завести бренд и сгенерировать Brand DNA',
-    description: 'Бренд — база для tone of voice, ограничений и генерации контента.',
+    title: '2. Открыть брендовый кабинет и выбрать бренд',
+    description: 'После выбора organization на dashboard здесь видно список брендов, карточку выбранного бренда и форму редактирования Brand DNA.',
     href: '/brands',
     label: 'Brands',
   },
   {
-    title: '4. Добавить товары и запустить Product DNA',
+    title: '3. Добавить товары и запустить Product DNA',
     description: 'Товарные карточки собирают SKU, описание, преимущества, доказательства и ограничения.',
     href: '/products',
     label: 'Products',
   },
   {
-    title: '5. Загрузить медиа и описать ЦА',
+    title: '4. Загрузить медиа и описать ЦА',
     description: 'Медиатека и аудитории дают контекст для контент-планов и материалов.',
     href: '/media-assets',
     label: 'Media',
   },
   {
-    title: '6. Собрать контент-план и пройти quality-check',
+    title: '5. Собрать контент-план и пройти quality-check',
     description: 'План, карточка материала, версии и тикеты — конечный рабочий цикл.',
     href: '/content-plans',
     label: 'Plans',

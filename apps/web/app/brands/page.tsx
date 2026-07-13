@@ -167,6 +167,7 @@ export default function BrandsPage() {
   );
 
   const currentOrganization = organizationId ? organizations.find((item) => item.id === organizationId) ?? null : null;
+  const hasOnlyOneBrand = brands.length === 1;
 
   async function handleGenerateDna(brandId: string) {
     if (!accessToken) {
@@ -286,7 +287,9 @@ export default function BrandsPage() {
           <div className="section-header">
             <div>
               <h2>Список брендов</h2>
-              <p className="muted">Выбери бренд, чтобы увидеть карточку справа.</p>
+              <p className="muted">
+                Выбери бренд, чтобы редактировать его справа. Сейчас в scope {brands.length} бренд{brands.length === 1 ? '' : 'а'}.
+              </p>
             </div>
           </div>
 
@@ -301,20 +304,22 @@ export default function BrandsPage() {
                     </div>
                     <span className="pill">{brand.status}</span>
                     <span className="pill">{brand.dna_json ? 'DNA ready' : 'DNA empty'}</span>
+                    {selectedBrandId === brand.id ? <span className="pill">Выбран</span> : null}
                   </div>
                   <p className="row-label">Created {formatDateTime(brand.created_at)}</p>
                 </div>
                 <div className="stack-sm">
                   <button className="secondary-button" onClick={() => setSelectedBrandId(brand.id)} type="button">
-                    Open
+                    Выбрать
                   </button>
                   <button className="secondary-button" disabled={isGenerating === brand.id} onClick={() => handleGenerateDna(brand.id)} type="button">
-                    {isGenerating === brand.id ? 'DNA…' : 'Generate DNA'}
+                    {isGenerating === brand.id ? 'Генерируем…' : 'Обновить Brand DNA'}
                   </button>
                 </div>
               </div>
             ))}
             {!isLoading && brands.length === 0 ? <p className="muted">Пока нет брендов в выбранном organization scope.</p> : null}
+            {!isLoading && hasOnlyOneBrand ? <p className="muted">Сейчас в scope только один бренд — это нормальный сценарий для первого запуска.</p> : null}
           </div>
         </article>
 

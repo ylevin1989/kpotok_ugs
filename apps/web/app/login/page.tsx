@@ -6,11 +6,10 @@ export default function LoginPage() {
     <main className="centered-page">
       <section className="card stack-lg auth-card">
         <div className="stack-sm">
-          <span className="eyebrow">MVP auth shell</span>
+          <span className="eyebrow">Вход и стартовый маршрут</span>
           <h1>Вход в Content Factory</h1>
           <p className="muted">
-            Это первый пользовательский слой поверх уже работающего backend/API. Логин идёт в
-            существующий `apiha.uno-ai.pw`, без отдельного или вложенного Hermes runtime.
+            После входа ты попадёшь в onboarding с прямыми ссылками на dashboard, brands и остальные рабочие экраны.
           </p>
         </div>
         <LoginForm />
