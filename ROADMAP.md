@@ -204,6 +204,7 @@ Delivered scope:
 - `apps/web/app/dashboard/page.tsx` now links to `/production-flow` as a primary navigation target
 - `apps/web/app/onboarding/page.tsx` now routes the final onboarding step to the production flow
 - The coordinator is intentionally thin: it reuses the existing domain workspaces for the actual create/edit actions instead of duplicating them on a new surface
+- The coordinator now includes in-page quick actions for brief creation and content-plan generation from the current scope
 - `npm run build` for `apps/web` succeeds after the production-flow packet
 - Live browser smoke on `https://app.uno-ai.pw/production-flow` confirms the new route renders after login
 

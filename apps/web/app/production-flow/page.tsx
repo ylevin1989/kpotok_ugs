@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { clearScopeSelection, clearSession, loadScopeSelection, loadSession, saveScopeSelection } from '../../lib/auth';
 import {
+  createBrief,
+  generateContentPlans,
   getAudienceSegments,
   getBriefs,
   getBrands,
@@ -50,9 +52,20 @@ export default function ProductionFlowPage() {
   const [selectedBrandId, setSelectedBrandId] = useState('');
   const [selectedBriefId, setSelectedBriefId] = useState('');
   const [selectedJobId, setSelectedJobId] = useState('');
+  const [briefTitle, setBriefTitle] = useState('');
+  const [briefContent, setBriefContent] = useState('');
+  const [planTitlePrefix, setPlanTitlePrefix] = useState('');
+  const [planPlatform, setPlanPlatform] = useState('instagram');
+  const [planContentType, setPlanContentType] = useState('post');
+  const [planGoal, setPlanGoal] = useState('awareness');
+  const [planStartDate, setPlanStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [planEndDate, setPlanEndDate] = useState(() => new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
   const [isLoading, setIsLoading] = useState(true);
   const [isBrandsLoading, setIsBrandsLoading] = useState(false);
   const [isScopeLoading, setIsScopeLoading] = useState(false);
+  const [isCreatingBrief, setIsCreatingBrief] = useState(false);
+  const [isGeneratingPlans, setIsGeneratingPlans] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -284,6 +297,17 @@ export default function ProductionFlowPage() {
     [jobs, selectedJobId],
   );
 
+  useEffect(() => {
+    if (!currentBrand) return;
+    setBriefTitle((current) => (current.trim() ? current : `${currentBrand.name} — brief`));
+    setBriefContent((current) =>
+      current.trim()
+        ? current
+        : `Brand: ${currentBrand.name}\nOrganization: ${currentOrganization?.name ?? ''}\nGoal: краткий рабочий brief для content plan.`,
+    );
+    setPlanTitlePrefix((current) => (current.trim() ? current : currentBrand.name));
+  }, [currentBrand, currentOrganization?.name]);
+
   const nextAction = useMemo(() => {
     if (!selectedOrganizationId) {
       return { label: 'Выбрать organization', href: '/dashboard', reason: 'Сначала нужен рабочий organization scope.' };
@@ -298,10 +322,10 @@ export default function ProductionFlowPage() {
       return { label: 'Добавить audience segment', href: '/audience-segments', reason: 'Для плана и текстов нужен сегмент аудитории.' };
     }
     if (briefs.length === 0) {
-      return { label: 'Создать brief', href: '/dashboard', reason: 'Следующий шаг — brief в dashboard.' };
+      return { label: 'Создать brief здесь', href: '#quick-actions', reason: 'Сначала собери brief, не уходя с этой страницы.' };
     }
     if (plans.length === 0) {
-      return { label: 'Сгенерировать content plan', href: '/content-plans', reason: 'Пора собрать рабочий контент-план.' };
+      return { label: 'Сгенерировать plans здесь', href: '#quick-actions', reason: 'После brief можно сразу собрать content plan.' };
     }
     if (!selectedJobId && jobs.length === 0) {
       return { label: 'Создать job', href: '/dashboard', reason: 'Теперь можно запускать генерацию через dashboard.' };
@@ -318,6 +342,74 @@ export default function ProductionFlowPage() {
     { title: 'Plans', count: formatCount(plans.length), detail: plans[0]?.title ?? 'Генерируются в content-plans', href: '/content-plans' },
     { title: 'Jobs', count: formatCount(jobs.length), detail: selectedJob ? `${selectedJob.status} · ${selectedJob.title}` : 'Показ генерации и статусов', href: '/dashboard' },
   ];
+
+  async function handleCreateBrief(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setActionMessage(null);
+
+    if (!accessToken || !selectedOrganizationId || !selectedBrandId) {
+      setActionMessage('Сначала выбери organization и brand.');
+      return;
+    }
+
+    const title = briefTitle.trim();
+    const content = briefContent.trim();
+    if (!title || !content) {
+      setActionMessage('Для brief нужны и заголовок, и содержание.');
+      return;
+    }
+
+    setIsCreatingBrief(true);
+    try {
+      const created = await createBrief(accessToken, {
+        organization_id: selectedOrganizationId,
+        brand_id: selectedBrandId,
+        title,
+        content,
+      });
+      setBriefs((current) => [created, ...current.filter((item) => item.id !== created.id)]);
+      setSelectedBriefId(created.id);
+      setActionMessage(`Brief создан: ${created.title}`);
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : 'Не удалось создать brief');
+    } finally {
+      setIsCreatingBrief(false);
+    }
+  }
+
+  async function handleGeneratePlans(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setActionMessage(null);
+
+    if (!accessToken || !selectedOrganizationId || !selectedBrandId) {
+      setActionMessage('Сначала выбери organization и brand.');
+      return;
+    }
+
+    setIsGeneratingPlans(true);
+    try {
+      const generated = await generateContentPlans(accessToken, {
+        organization_id: selectedOrganizationId,
+        brand_id: selectedBrandId,
+        product_id: products[0]?.id ?? null,
+        audience_segment_id: segments[0]?.id ?? null,
+        scope: 'brand',
+        start_date: planStartDate,
+        end_date: planEndDate,
+        title_prefix: planTitlePrefix.trim() || undefined,
+        platform: planPlatform.trim(),
+        content_type: planContentType.trim(),
+        goal: planGoal.trim(),
+        status: 'draft',
+      });
+      setPlans(generated.items);
+      setActionMessage(`Content plans сгенерированы: ${generated.items.length}`);
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : 'Не удалось сгенерировать content plans');
+    } finally {
+      setIsGeneratingPlans(false);
+    }
+  }
 
   return (
     <main className="page stack-xl">
@@ -339,6 +431,94 @@ export default function ProductionFlowPage() {
           <Link className="secondary-button" href="/content-plans">Plans</Link>
         </div>
       </section>
+
+      <section id="quick-actions" className="grid two-up">
+        <article className="card stack-sm">
+          <div className="section-header">
+            <div>
+              <h2>Быстрый brief</h2>
+              <p className="muted">Создай brief прямо отсюда, не прыгая по экрану.</p>
+            </div>
+          </div>
+          <form className="stack-sm" onSubmit={handleCreateBrief}>
+            <label className="label-stack">
+              <span>Brief title</span>
+              <input
+                className="input"
+                onChange={(event) => setBriefTitle(event.target.value)}
+                placeholder="Например, weekly brand brief"
+                value={briefTitle}
+              />
+            </label>
+            <label className="label-stack">
+              <span>Brief content</span>
+              <textarea
+                className="input"
+                onChange={(event) => setBriefContent(event.target.value)}
+                rows={6}
+                value={briefContent}
+              />
+            </label>
+            <button className="primary-button" disabled={isCreatingBrief} type="submit">
+              {isCreatingBrief ? 'Создаём…' : 'Создать brief'}
+            </button>
+          </form>
+        </article>
+
+        <article className="card stack-sm">
+          <div className="section-header">
+            <div>
+              <h2>Быстрый content plan</h2>
+              <p className="muted">Собери план из текущего brand scope и первого доступного context.</p>
+            </div>
+          </div>
+          <form className="stack-sm" onSubmit={handleGeneratePlans}>
+            <label className="label-stack">
+              <span>Title prefix</span>
+              <input
+                className="input"
+                onChange={(event) => setPlanTitlePrefix(event.target.value)}
+                placeholder="Например, Лаконика"
+                value={planTitlePrefix}
+              />
+            </label>
+            <div className="grid two-up">
+              <label className="label-stack">
+                <span>Platform</span>
+                <input className="input" onChange={(event) => setPlanPlatform(event.target.value)} value={planPlatform} />
+              </label>
+              <label className="label-stack">
+                <span>Content type</span>
+                <input className="input" onChange={(event) => setPlanContentType(event.target.value)} value={planContentType} />
+              </label>
+            </div>
+            <label className="label-stack">
+              <span>Goal</span>
+              <input className="input" onChange={(event) => setPlanGoal(event.target.value)} value={planGoal} />
+            </label>
+            <div className="grid two-up">
+              <label className="label-stack">
+                <span>Start date</span>
+                <input className="input" type="date" onChange={(event) => setPlanStartDate(event.target.value)} value={planStartDate} />
+              </label>
+              <label className="label-stack">
+                <span>End date</span>
+                <input className="input" type="date" onChange={(event) => setPlanEndDate(event.target.value)} value={planEndDate} />
+              </label>
+            </div>
+            <button className="primary-button" disabled={isGeneratingPlans} type="submit">
+              {isGeneratingPlans ? 'Генерируем…' : 'Сгенерировать plans'}
+            </button>
+          </form>
+        </article>
+      </section>
+
+      {actionMessage ? (
+        <section className="card stack-sm">
+          <h2>Quick action</h2>
+          <p>{actionMessage}</p>
+        </section>
+      ) : null}
 
       {error ? (
         <section className="card stack-sm error-card">
