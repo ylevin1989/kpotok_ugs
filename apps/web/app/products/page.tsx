@@ -55,6 +55,134 @@ function joinList(items: string[]): string {
   return items.join(', ');
 }
 
+function prettyList(items: string[] | null | undefined): string {
+  return items && items.length > 0 ? items.join(', ') : '—';
+}
+
+function getDnaRecord(dnaJson: Record<string, unknown> | null): Record<string, unknown> | null {
+  if (!dnaJson || typeof dnaJson !== 'object') {
+    return null;
+  }
+
+  const dna = dnaJson.dna;
+  if (dna && typeof dna === 'object' && !Array.isArray(dna)) {
+    return dna as Record<string, unknown>;
+  }
+
+  return dnaJson;
+}
+
+function findTextDeep(record: unknown, keys: string[], seen = new Set<unknown>()): string | null {
+  if (!record || typeof record !== 'object' || seen.has(record)) {
+    return null;
+  }
+  seen.add(record);
+
+  if (Array.isArray(record)) {
+    for (const item of record) {
+      const found = findTextDeep(item, keys, seen);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  for (const [key, value] of Object.entries(record as Record<string, unknown>)) {
+    if (keys.includes(key) && typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+    const found = findTextDeep(value, keys, seen);
+    if (found) return found;
+  }
+
+  return null;
+}
+
+function findAnyTextDeep(record: unknown, seen = new Set<unknown>()): string | null {
+  if (typeof record === 'string') {
+    const trimmed = record.trim();
+    return trimmed || null;
+  }
+  if (!record || typeof record !== 'object' || seen.has(record)) {
+    return null;
+  }
+  seen.add(record);
+
+  if (Array.isArray(record)) {
+    for (const item of record) {
+      const found = findAnyTextDeep(item, seen);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  for (const value of Object.values(record as Record<string, unknown>)) {
+    const found = findAnyTextDeep(value, seen);
+    if (found) return found;
+  }
+
+  return null;
+}
+
+function findListDeep(record: unknown, keys: string[], seen = new Set<unknown>()): string[] | null {
+  if (!record || typeof record !== 'object' || seen.has(record)) {
+    return null;
+  }
+  seen.add(record);
+
+  if (Array.isArray(record)) {
+    const items = record.flatMap((item) => (typeof item === 'string' ? [item.trim()] : [])).filter(Boolean);
+    if (items.length) return items;
+    for (const item of record) {
+      const found = findListDeep(item, keys, seen);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  for (const [key, value] of Object.entries(record as Record<string, unknown>)) {
+    if (keys.includes(key)) {
+      if (Array.isArray(value)) {
+        const items = value.map((item) => (typeof item === 'string' ? item.trim() : '')).filter(Boolean);
+        if (items.length) return items;
+      } else if (typeof value === 'string') {
+        const items = value
+          .split('\n')
+          .flatMap((line) => line.split(','))
+          .map((item) => item.trim())
+          .filter(Boolean);
+        if (items.length) return items;
+      }
+    }
+    const found = findListDeep(value, keys, seen);
+    if (found) return found;
+  }
+
+  return null;
+}
+
+function readText(record: Record<string, unknown> | null, keys: string[]): string | null {
+  return findTextDeep(record, keys);
+}
+
+function readList(record: Record<string, unknown> | null, keys: string[]): string[] | null {
+  return findListDeep(record, keys);
+}
+
+function composeProductSummary(record: Record<string, unknown> | null): string | null {
+  const parts = [
+    readText(record, ['description', 'summary', 'positioning', 'value_proposition', 'overview', 'pitch']),
+    readList(record, ['features', 'capabilities', 'benefits', 'advantages'])?.slice(0, 3).join(', '),
+  ].filter((item): item is string => Boolean(item && item.trim()));
+
+  if (parts.length) {
+    return parts.join(' · ');
+  }
+
+  const anyText = findAnyTextDeep(record);
+  if (!anyText) return null;
+  return anyText.length > 180 ? `${anyText.slice(0, 177)}…` : anyText;
+}
+
 function formatDateTime(value: string): string {
   return new Date(value).toLocaleString('ru-RU');
 }
@@ -86,7 +214,7 @@ export default function ProductsPage() {
     setAccessToken(token);
     setScope(savedScope);
     if (!savedScope?.organizationId) {
-      setError('Сначала выбери organization и brand на dashboard');
+      setError('Сначала выбери организацию и бренд на панели');
       setIsLoading(false);
       return;
     }
@@ -172,6 +300,7 @@ export default function ProductsPage() {
     () => products.find((product) => product.id === selectedProductId) ?? null,
     [products, selectedProductId],
   );
+  const dnaRecord = useMemo(() => getDnaRecord(selectedProduct?.dna_json ?? null), [selectedProduct]);
 
   useEffect(() => {
     if (!selectedProduct) {
@@ -183,16 +312,16 @@ export default function ProductsPage() {
       sku: selectedProduct.sku,
       name: selectedProduct.name,
       category: selectedProduct.category,
-      description: selectedProduct.description,
-      features: joinList(selectedProduct.features),
-      benefits: joinList(selectedProduct.benefits),
-      proofs: joinList(selectedProduct.proofs),
-      objections: joinList(selectedProduct.objections),
-      restrictions: joinList(selectedProduct.restrictions),
+      description: selectedProduct.description || readText(dnaRecord, ['description', 'summary', 'positioning', 'value_proposition']) || '',
+      features: joinList(selectedProduct.features.length ? selectedProduct.features : readList(dnaRecord, ['features', 'capabilities']) ?? []),
+      benefits: joinList(selectedProduct.benefits.length ? selectedProduct.benefits : readList(dnaRecord, ['benefits', 'advantages']) ?? []),
+      proofs: joinList(selectedProduct.proofs.length ? selectedProduct.proofs : readList(dnaRecord, ['proofs', 'evidence', 'proof']) ?? []),
+      objections: joinList(selectedProduct.objections.length ? selectedProduct.objections : readList(dnaRecord, ['objections', 'risks', 'concerns']) ?? []),
+      restrictions: joinList(selectedProduct.restrictions.length ? selectedProduct.restrictions : readList(dnaRecord, ['restrictions', 'constraints', 'limitations']) ?? []),
       status: selectedProduct.status,
       readiness_score: String(selectedProduct.readiness_score),
     });
-  }, [selectedProduct]);
+  }, [dnaRecord, selectedProduct]);
 
   async function refreshProducts(nextSelectedId: string | null = selectedProductId) {
     if (!accessToken || !scope?.organizationId || !scope.brandId) {
@@ -217,7 +346,7 @@ export default function ProductsPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!accessToken || !scope?.organizationId || !scope.brandId) {
-      setError('Нет активного scope');
+      setError('Нет активной области');
       return;
     }
 
@@ -264,9 +393,9 @@ export default function ProductsPage() {
     setNotice(null);
     try {
       await generateProductDna(accessToken, productId);
-      setNotice('Job на генерацию Product DNA создан');
+      setNotice('Задача на генерацию ДНК продукта создана');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось запустить Product DNA');
+      setError(err instanceof Error ? err.message : 'Не удалось запустить ДНК продукта');
     } finally {
       setIsGenerating(null);
     }
@@ -274,7 +403,7 @@ export default function ProductsPage() {
 
   const scopeSummary = scope
     ? `${scope.organizationId}${scope.brandId ? ` · ${scope.brandId}` : ''}`
-    : 'scope не выбран';
+    : 'область не выбрана';
 
   const currentOrganization = scope?.organizationId
     ? organizations.find((item) => item.id === scope.organizationId) ?? null
@@ -285,15 +414,15 @@ export default function ProductsPage() {
     <main className="page stack-xl">
       <section className="hero-row">
         <div className="stack-sm">
-          <span className="eyebrow">Products</span>
+          <span className="eyebrow">Продукты</span>
           <h1>Продуктовый кабинет</h1>
           <p className="muted">
-            Это первый вынос продукта из dashboard: список, карточка, редактирование и запуск Product DNA.
+            Это первый вынос продукта из панели: список, карточка, редактирование и запуск ДНК продукта.
           </p>
         </div>
         <div className="row">
           <Link className="secondary-button" href="/dashboard">
-            Назад в dashboard
+            Назад в панель
           </Link>
           <button className="secondary-button" onClick={handleReset} type="button">
             Новый продукт
@@ -317,36 +446,36 @@ export default function ProductsPage() {
 
       <section className="grid two-up">
         <article className="card stack-sm">
-          <h2>Scope</h2>
+          <h2>Область</h2>
           <dl className="keyvals">
             <div>
-              <dt>Organization</dt>
+              <dt>Организация</dt>
               <dd>{currentOrganization ? currentOrganization.name : scope?.organizationId ?? '—'}</dd>
             </div>
             <div>
-              <dt>Brand</dt>
+              <dt>Бренд</dt>
               <dd>{currentBrand ? currentBrand.name : scope?.brandId ?? '—'}</dd>
             </div>
             <div>
-              <dt>Scope id</dt>
+              <dt>ID области</dt>
               <dd className="mono">{scopeSummary}</dd>
             </div>
             <div>
-              <dt>Products loaded</dt>
+              <dt>Загружено продуктов</dt>
               <dd>{products.length}</dd>
             </div>
           </dl>
           <p className="muted">
-            Если scope пустой, сначала вернись в dashboard и выбери organization/brand.
+            Если область пустая, сначала вернись в панель и выбери организацию и бренд.
           </p>
         </article>
 
         <article className="card stack-sm">
           <h2>Что уже доступно</h2>
           <ul className="checklist">
-            <li>create / list / update / generate-dna для products</li>
-            <li>архивная organization блокирует product writes</li>
-            <li>бренд и organization в форме фиксируются из dashboard scope</li>
+            <li>создать, посмотреть, обновить и запустить ДНК продукта</li>
+            <li>архивная организация блокирует запись продуктов</li>
+            <li>бренд и организация в форме фиксируются из области панели</li>
           </ul>
         </article>
       </section>
@@ -356,66 +485,66 @@ export default function ProductsPage() {
           <div className="section-header">
             <div>
               <h2>{selectedProduct ? 'Редактировать продукт' : 'Создать продукт'}</h2>
-              <p className="muted">Работаем только в выбранном organization/brand scope.</p>
+              <p className="muted">Работаем только в выбранной области организации и бренда.</p>
             </div>
           </div>
 
           <form className="form-grid" onSubmit={handleSubmit}>
             <label className="label-stack">
-              <span>SKU</span>
+              <span>Артикул</span>
               <input className="input" onChange={(event) => setForm((current) => ({ ...current, sku: event.target.value }))} value={form.sku} required />
             </label>
 
             <label className="label-stack">
-              <span>Name</span>
+              <span>Название</span>
               <input className="input" onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} value={form.name} required />
             </label>
 
             <label className="label-stack">
-              <span>Category</span>
+              <span>Категория</span>
               <input className="input" onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))} value={form.category} required />
             </label>
 
             <label className="label-stack">
-              <span>Description</span>
+              <span>Описание</span>
               <textarea className="input" onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} rows={4} value={form.description} required />
             </label>
 
             <div className="grid two-up">
               <label className="label-stack">
-                <span>Features</span>
+                <span>Функции</span>
                 <textarea className="input" onChange={(event) => setForm((current) => ({ ...current, features: event.target.value }))} rows={4} value={form.features} />
               </label>
               <label className="label-stack">
-                <span>Benefits</span>
+                <span>Преимущества</span>
                 <textarea className="input" onChange={(event) => setForm((current) => ({ ...current, benefits: event.target.value }))} rows={4} value={form.benefits} />
               </label>
             </div>
 
             <div className="grid two-up">
               <label className="label-stack">
-                <span>Proofs</span>
+                <span>Доказательства</span>
                 <textarea className="input" onChange={(event) => setForm((current) => ({ ...current, proofs: event.target.value }))} rows={4} value={form.proofs} />
               </label>
               <label className="label-stack">
-                <span>Objections</span>
+                <span>Возражения</span>
                 <textarea className="input" onChange={(event) => setForm((current) => ({ ...current, objections: event.target.value }))} rows={4} value={form.objections} />
               </label>
             </div>
 
             <div className="grid two-up">
               <label className="label-stack">
-                <span>Restrictions</span>
+                <span>Ограничения</span>
                 <textarea className="input" onChange={(event) => setForm((current) => ({ ...current, restrictions: event.target.value }))} rows={3} value={form.restrictions} />
               </label>
               <label className="label-stack">
-                <span>Readiness score</span>
+                <span>Оценка готовности</span>
                 <input className="input" min="0" max="100" onChange={(event) => setForm((current) => ({ ...current, readiness_score: event.target.value }))} type="number" value={form.readiness_score} />
               </label>
             </div>
 
             <label className="label-stack">
-              <span>Status</span>
+              <span>Статус</span>
               <input className="input" onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))} value={form.status} />
             </label>
 
@@ -436,9 +565,41 @@ export default function ProductsPage() {
           <div className="section-header">
             <div>
               <h2>Список продуктов</h2>
-              <p className="muted">Выбери строку, чтобы отредактировать или запустить DNA job.</p>
+              <p className="muted">Выбери строку, чтобы отредактировать или запустить ДНК-задачу.</p>
             </div>
           </div>
+
+          {selectedProduct ? (
+            <div className="card stack-sm subtle-card">
+              <div className="keyvals">
+                <div><dt>Название</dt><dd>{selectedProduct.name}</dd></div>
+                <div><dt>Артикул</dt><dd>{selectedProduct.sku}</dd></div>
+                <div><dt>Категория</dt><dd>{selectedProduct.category}</dd></div>
+                <div><dt>Описание</dt><dd>{selectedProduct.description || readText(dnaRecord, ['description', 'summary', 'positioning', 'value_proposition']) || '—'}</dd></div>
+                <div><dt>Статус</dt><dd>{selectedProduct.status}</dd></div>
+                <div><dt>Готовность</dt><dd>{selectedProduct.readiness_score}/100</dd></div>
+              </div>
+
+              <div className="row-label">Функции</div>
+              <p>{prettyList(selectedProduct.features.length ? selectedProduct.features : readList(dnaRecord, ['features', 'capabilities']))}</p>
+              <div className="row-label">Преимущества</div>
+              <p>{prettyList(selectedProduct.benefits.length ? selectedProduct.benefits : readList(dnaRecord, ['benefits', 'advantages']))}</p>
+              <div className="row-label">Доказательства</div>
+              <p>{prettyList(selectedProduct.proofs.length ? selectedProduct.proofs : readList(dnaRecord, ['proofs', 'evidence', 'proof']))}</p>
+              <div className="row-label">Возражения</div>
+              <p>{prettyList(selectedProduct.objections.length ? selectedProduct.objections : readList(dnaRecord, ['objections', 'risks', 'concerns']))}</p>
+              <div className="row-label">Ограничения</div>
+              <p>{prettyList(selectedProduct.restrictions.length ? selectedProduct.restrictions : readList(dnaRecord, ['restrictions', 'constraints', 'limitations']))}</p>
+
+              <div className="row-label">Ключевой вывод</div>
+              <p>{composeProductSummary(dnaRecord) ?? 'Данные продукта пока не заполнены'}</p>
+
+              <details>
+                <summary>Показать технические данные</summary>
+                <pre className="code-block">{selectedProduct.dna_json ? JSON.stringify(selectedProduct.dna_json, null, 2) : 'Product DNA ещё не сгенерирован'}</pre>
+              </details>
+            </div>
+          ) : null}
 
           {isLoading ? <p className="muted">Загружаем данные…</p> : null}
 
@@ -453,21 +614,21 @@ export default function ProductsPage() {
                     </div>
                     <span className="pill">{product.status}</span>
                   </div>
-                  <p className="muted">{product.category} · readiness {product.readiness_score}/100</p>
+                  <p className="muted">{product.category} · готовность {product.readiness_score}/100</p>
                   <p className="muted">{product.description}</p>
-                  <p className="row-label">Created {formatDateTime(product.created_at)}</p>
+                  <p className="row-label">Создан {formatDateTime(product.created_at)}</p>
                 </div>
                 <div className="stack-sm">
                   <button className="secondary-button" onClick={() => setSelectedProductId(product.id)} type="button">
-                    Edit
+                    Редактировать
                   </button>
                   <button className="secondary-button" disabled={isGenerating === product.id} onClick={() => handleGenerateDna(product.id)} type="button">
-                    {isGenerating === product.id ? 'DNA…' : 'Generate DNA'}
+                    {isGenerating === product.id ? 'ДНК…' : 'Сгенерировать ДНК'}
                   </button>
                 </div>
               </div>
             ))}
-            {!isLoading && products.length === 0 ? <p className="muted">Пока нет продуктов в выбранном scope.</p> : null}
+            {!isLoading && products.length === 0 ? <p className="muted">Пока нет продуктов в выбранной области.</p> : null}
           </div>
         </article>
       </section>

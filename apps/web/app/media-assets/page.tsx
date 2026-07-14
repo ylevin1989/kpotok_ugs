@@ -15,8 +15,8 @@ import {
 import type { BrandRead, MediaAssetRead, OrganizationRead, ProductRead } from '../../lib/types';
 
 const SCOPE_OPTIONS = [
-  { value: 'brand', label: 'Brand' },
-  { value: 'product', label: 'Product' },
+  { value: 'brand', label: 'Бренд' },
+  { value: 'product', label: 'Продукт' },
 ] as const;
 
 type MediaAssetFormState = {
@@ -81,7 +81,7 @@ export default function MediaAssetsPage() {
 
     const scope = loadScopeSelection();
     if (!scope?.organizationId || !scope.brandId) {
-      setError('Сначала выбери organization и brand на dashboard');
+      setError('Сначала выбери организацию и бренд на панели');
       setIsLoading(false);
       return;
     }
@@ -184,11 +184,11 @@ export default function MediaAssetsPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!accessToken || !organizationId || !brandId) {
-      setError('Нет активного scope');
+      setError('Нет активной области');
       return;
     }
     if (selectedScope === 'product' && !selectedProductId) {
-      setError('Для product scope нужен product_id');
+      setError('Для области продукта нужен идентификатор продукта');
       return;
     }
 
@@ -210,7 +210,7 @@ export default function MediaAssetsPage() {
         size_bytes: form.size_bytes.trim() ? Number(form.size_bytes) : null,
         checksum: form.checksum.trim() || null,
       });
-      setNotice(`Media asset создан: ${saved.name}`);
+      setNotice(`Медиа-ассет создан: ${saved.name}`);
       setForm(EMPTY_FORM);
       const response = await getMediaAssets(
         accessToken,
@@ -221,7 +221,7 @@ export default function MediaAssetsPage() {
       );
       setAssets(response.items);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось сохранить медиа asset');
+      setError(err instanceof Error ? err.message : 'Не удалось сохранить медиа-ассет');
     } finally {
       setIsSaving(false);
     }
@@ -231,15 +231,15 @@ export default function MediaAssetsPage() {
     <main className="page stack-xl">
       <section className="hero-row">
         <div className="stack-sm">
-          <span className="eyebrow">Media library</span>
+          <span className="eyebrow">Библиотека медиа</span>
           <h1>Библиотека медиа</h1>
           <p className="muted">
-            Первый медиа-срез: brand/product scope, список ассетов и создание записи в live API.
+            Первая медиа-область: область бренда/продукта, список ассетов и создание записи в живом API.
           </p>
         </div>
         <div className="row">
-          <Link className="secondary-button" href="/dashboard">Dashboard</Link>
-          <Link className="secondary-button" href="/products">Products</Link>
+          <Link className="secondary-button" href="/dashboard">Панель</Link>
+          <Link className="secondary-button" href="/products">Продукты</Link>
         </div>
       </section>
 
@@ -259,22 +259,22 @@ export default function MediaAssetsPage() {
 
       <section className="grid two-up">
         <article className="card stack-sm">
-          <h2>Scope</h2>
+          <h2>Область</h2>
           <dl className="keyvals">
-            <div><dt>Organization</dt><dd>{currentOrganization ? currentOrganization.name : organizationId ?? '—'}</dd></div>
-            <div><dt>Brand</dt><dd>{currentBrand ? currentBrand.name : brandId ?? '—'}</dd></div>
-            <div><dt>Scope mode</dt><dd>{selectedScope}</dd></div>
-            <div><dt>Product</dt><dd>{selectedProduct ? selectedProduct.name : '—'}</dd></div>
-            <div><dt>Assets loaded</dt><dd>{assets.length}</dd></div>
+            <div><dt>Организация</dt><dd>{currentOrganization ? currentOrganization.name : organizationId ?? '—'}</dd></div>
+            <div><dt>Бренд</dt><dd>{currentBrand ? currentBrand.name : brandId ?? '—'}</dd></div>
+            <div><dt>Режим области</dt><dd>{selectedScope}</dd></div>
+            <div><dt>Продукт</dt><dd>{selectedProduct ? selectedProduct.name : '—'}</dd></div>
+            <div><dt>Загружено ассетов</dt><dd>{assets.length}</dd></div>
           </dl>
         </article>
 
         <article className="card stack-sm">
           <h2>Что доступно</h2>
           <ul className="checklist">
-            <li>чтение media-assets по current org/brand scope</li>
-            <li>запись media asset через live API</li>
-            <li>product scope поддерживается через опциональный product_id</li>
+            <li>чтение медиа-ассетов по текущей области организации и бренда</li>
+            <li>запись медиа-ассета через живой API</li>
+            <li>область продукта поддерживается через необязательный идентификатор продукта</li>
           </ul>
         </article>
       </section>
@@ -283,14 +283,14 @@ export default function MediaAssetsPage() {
         <article className="card stack-md">
           <div className="section-header">
             <div>
-              <h2>Создать media asset</h2>
-              <p className="muted">Brand-level или product-level запись с проверкой scope.</p>
+              <h2>Создать медиа-ассет</h2>
+              <p className="muted">Запись на уровне бренда или продукта с проверкой области.</p>
             </div>
           </div>
 
           <form className="stack-md" onSubmit={handleSubmit}>
             <label className="label-stack">
-              <span>Scope</span>
+              <span>Область</span>
               <select className="input" onChange={(event) => setSelectedScope(event.target.value as 'brand' | 'product')} value={selectedScope}>
                 {SCOPE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
@@ -299,28 +299,28 @@ export default function MediaAssetsPage() {
             </label>
 
             <label className="label-stack">
-              <span>Product</span>
+              <span>Продукт</span>
               <select className="input" disabled={selectedScope !== 'product' || productOptions.length === 0} onChange={(event) => setSelectedProductId(event.target.value)} value={selectedProductId}>
                 {selectedScope === 'product' && productOptions.length === 0 ? <option value="">Нет продуктов</option> : null}
-                <option value="">{selectedScope === 'product' ? 'Выбери product' : 'Brand scope — product не нужен'}</option>
+                <option value="">{selectedScope === 'product' ? 'Выбери продукт' : 'Область бренда — продукт не нужен'}</option>
                 {productOptions.map((product) => (
                   <option key={product.id} value={product.id}>{product.label}</option>
                 ))}
               </select>
             </label>
 
-            <label className="label-stack"><span>Name</span><input className="input" onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required value={form.name} /></label>
-            <label className="label-stack"><span>Description</span><textarea className="input" onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} rows={3} required value={form.description} /></label>
-            <label className="label-stack"><span>Asset key</span><input className="input" onChange={(event) => setForm((current) => ({ ...current, asset_key: event.target.value }))} required value={form.asset_key} /></label>
-            <label className="label-stack"><span>Source URL</span><input className="input" onChange={(event) => setForm((current) => ({ ...current, source_url: event.target.value }))} value={form.source_url} /></label>
-            <label className="label-stack"><span>Content type</span><input className="input" onChange={(event) => setForm((current) => ({ ...current, content_type: event.target.value }))} required value={form.content_type} /></label>
+            <label className="label-stack"><span>Название</span><input className="input" onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required value={form.name} /></label>
+            <label className="label-stack"><span>Описание</span><textarea className="input" onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} rows={3} required value={form.description} /></label>
+            <label className="label-stack"><span>Ключ ассета</span><input className="input" onChange={(event) => setForm((current) => ({ ...current, asset_key: event.target.value }))} required value={form.asset_key} /></label>
+            <label className="label-stack"><span>Источник URL</span><input className="input" onChange={(event) => setForm((current) => ({ ...current, source_url: event.target.value }))} value={form.source_url} /></label>
+            <label className="label-stack"><span>Тип контента</span><input className="input" onChange={(event) => setForm((current) => ({ ...current, content_type: event.target.value }))} required value={form.content_type} /></label>
             <div className="grid two-up">
-              <label className="label-stack"><span>Size bytes</span><input className="input" inputMode="numeric" onChange={(event) => setForm((current) => ({ ...current, size_bytes: event.target.value }))} value={form.size_bytes} /></label>
-              <label className="label-stack"><span>Checksum</span><input className="input" onChange={(event) => setForm((current) => ({ ...current, checksum: event.target.value }))} value={form.checksum} /></label>
+              <label className="label-stack"><span>Размер в байтах</span><input className="input" inputMode="numeric" onChange={(event) => setForm((current) => ({ ...current, size_bytes: event.target.value }))} value={form.size_bytes} /></label>
+              <label className="label-stack"><span>Контрольная сумма</span><input className="input" onChange={(event) => setForm((current) => ({ ...current, checksum: event.target.value }))} value={form.checksum} /></label>
             </div>
 
             <button className="primary-button" disabled={isSaving} type="submit">
-              {isSaving ? 'Сохраняем…' : 'Создать media asset'}
+              {isSaving ? 'Сохраняем…' : 'Создать медиа-ассет'}
             </button>
           </form>
         </article>
@@ -328,8 +328,8 @@ export default function MediaAssetsPage() {
         <article className="card stack-md">
           <div className="section-header">
             <div>
-              <h2>Media assets</h2>
-              <p className="muted">Список текущих ассетов для выбранного scope.</p>
+              <h2>Медиа-ассеты</h2>
+              <p className="muted">Список текущих ассетов для выбранной области.</p>
             </div>
             <span className="pill">{assets.length}</span>
           </div>
@@ -339,18 +339,18 @@ export default function MediaAssetsPage() {
               <article className="brief-card stack-xs" key={asset.id}>
                 <div className="brief-meta">
                   <strong>{asset.name}</strong>
-                  <span className="pill subtle-pill">{asset.scope}</span>
+                  <span className="pill subtle-pill">{asset.scope === 'brand' ? 'Бренд' : 'Продукт'}</span>
                 </div>
                 <p className="brief-content">{asset.description}</p>
                 <dl className="keyvals">
-                  <div><dt>Asset key</dt><dd className="mono">{asset.asset_key}</dd></div>
-                  <div><dt>Content type</dt><dd>{asset.content_type}</dd></div>
-                  <div><dt>Product</dt><dd>{asset.product_id ?? '—'}</dd></div>
-                  <div><dt>Created</dt><dd>{formatDateTime(asset.created_at)}</dd></div>
+                  <div><dt>Ключ ассета</dt><dd className="mono">{asset.asset_key}</dd></div>
+                  <div><dt>Тип контента</dt><dd>{asset.content_type}</dd></div>
+                  <div><dt>Продукт</dt><dd>{asset.product_id ?? '—'}</dd></div>
+                  <div><dt>Создан</dt><dd>{formatDateTime(asset.created_at)}</dd></div>
                 </dl>
               </article>
             ))}
-            {!isLoading && assets.length === 0 ? <p className="muted">Пока нет media assets в текущем scope.</p> : null}
+            {!isLoading && assets.length === 0 ? <p className="muted">Пока нет медиа-ассетов в текущей области.</p> : null}
           </div>
         </article>
       </section>

@@ -51,12 +51,27 @@ Content Factory is the control plane and application layer built on top of an ex
 - API regression remains green after the content-generation bridge packet
 
 ### Content Generation Context Packet 01 — done
-- `apps/api/app/domain/content_generation.py` now resolves rich brand/product/audience/channel/task context from the database and serializes it into `Brief.content`
-- `apps/api/app/schemas/job.py` and `apps/api/app/api/v1/jobs.py` now expose `brief_content` in `JobRead` so the worker receives the actual context, not just `brief_id`
-- `apps/worker/app/role_prompts.py` now includes `brief_content` directly in the per-role prompt so the LLM sees the enriched context
-- `apps/api/tests/test_packet206.py` covers the nested context payload and the product-scope mismatch guard
-- `apps/worker/tests/test_role_prompts.py` now covers prompt injection of brief content
-- API regression remains green after the context-builder packet
+|- `apps/api/app/domain/content_generation.py` now resolves rich brand/product/audience/channel/task context from the database and serializes it into `Brief.content`
+|- `apps/api/app/schemas/job.py` and `apps/api/app/api/v1/jobs.py` now expose `brief_content` in `JobRead` so the worker receives the actual context, not just `brief_id`
+|- `apps/worker/app/role_prompts.py` now includes `brief_content` directly in the per-role prompt so the LLM sees the enriched context
+|- `apps/api/tests/test_packet206.py` covers the nested context payload and the product-scope mismatch guard
+|- `apps/worker/tests/test_role_prompts.py` now covers prompt injection of brief content
+|- API regression remains green after the context-builder packet
+
+### Claim-Time Generation Context Packet 02 — done
+|- `apps/api/app/schemas/job.py` now exposes `context` on `JobRead` in addition to `brief_content`
+|- `apps/api/app/api/v1/jobs.py` now populates `context` from parsed `Brief.content` so claim-next/claim return the full generation payload
+|- `apps/worker/app/role_prompts.py` now prefers `context` when present and falls back to `brief_content`
+|- `apps/api/tests/test_packet207.py` covers claim-next and claim propagation of the generation payload
+|- `apps/worker/tests/test_role_prompts.py` covers prompt preference for the parsed context payload
+|- API/worker regression remains green after the claim-time context packet
+
+### Content Generation Output Contract Packet 03 — done
+|- `apps/worker/app/role_prompts.py` now instructs the final role to emit `content_version.structured_json` with `{title,text,short_text,cta,visual_task,image_prompt,risks}` plus `body_markdown`
+|- `apps/api/app/api/v1/jobs.py` now parses that JSON payload and persists `structured_json` / `body_markdown` separately on `content_versions`
+|- `apps/api/tests/test_packet208.py` covers the structured output persistence path
+|- `apps/worker/tests/test_role_prompts.py` covers the full context-rich prompt and final output contract
+|- API/worker regression remains green after the structured-output packet
 
 
 ### Ticket Revision Packet 01 — done
@@ -180,6 +195,19 @@ Delivered scope:
 - `apps/api/tests/test_packet199.py` covers registration, login-after-registration, and owner assignment of the new user into an organization
 - `npm run build` for `apps/web` succeeds after the access/onboarding/members packet
 - ROADMAP, current-task, and handoff are synchronized with the packet
+
+### Production Flow Packet 01 — done
+Goal completed: add a unified coordinator screen that guides the user through the live product workspaces instead of forcing them to remember the route graph.
+
+Delivered scope:
+- `apps/web/app/production-flow/page.tsx` adds a guided flow screen that summarizes the current organization/brand scope, counts the available products/segments/briefs/plans/jobs, and suggests the next recommended action
+- `apps/web/app/dashboard/page.tsx` now links to `/production-flow` as a primary navigation target
+- `apps/web/app/onboarding/page.tsx` now routes the final onboarding step to the production flow
+- The coordinator is intentionally thin: it reuses the existing domain workspaces for the actual create/edit actions instead of duplicating them on a new surface
+- The coordinator now includes in-page quick actions for brief creation and content-plan generation from the current scope
+- The visible UI uses Russian labels/copy for the user-facing workflow, while internal route keys and API payload fields stay unchanged to preserve backend contracts.
+- `npm run build` for `apps/web` succeeds after the production-flow packet
+- Live browser smoke on `https://app.uno-ai.pw/production-flow` confirms the new route renders after login
 
 ### Product Core Packet 02 — done
 Goal completed: extend the product surface with update semantics so managers can edit product attributes in place while keeping org/brand scope and uniqueness rules intact.

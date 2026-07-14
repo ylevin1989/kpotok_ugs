@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -89,6 +90,7 @@ def create_quality_check_record(
         ticket=ticket,
         threshold=threshold,
     )
+    now = checked_at or datetime.now(timezone.utc)
     quality_check = QualityCheck(
         organization_id=organization_id,
         brand_id=content_item.brand_id,
@@ -106,8 +108,12 @@ def create_quality_check_record(
         generated_from_task_id=generated_from_task_id,
         created_by_id=current_user.id if current_user is not None else None,
         checked_at=checked_at,
+        created_at=now,
+        updated_at=now,
     )
     db.add(quality_check)
+    quality_check.created_at = now
+    quality_check.updated_at = now
     content_item.quality_score = evaluation.score
     content_item.status = evaluation.content_status
     if checked_at is not None:

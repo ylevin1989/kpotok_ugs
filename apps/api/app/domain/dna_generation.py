@@ -23,6 +23,15 @@ def build_brand_dna_request(brand: Brand) -> dict[str, Any]:
         'organization_id': str(brand.organization_id),
         'name': brand.name,
         'slug': brand.slug,
+        'positioning': brand.positioning,
+        'tone_of_voice': brand.tone_of_voice,
+        'mission': brand.mission,
+        'values': brand.values,
+        'forbidden_claims': brand.forbidden_claims,
+        'allowed_claims': brand.allowed_claims,
+        'competitors': brand.competitors,
+        'good_examples': brand.good_examples,
+        'bad_examples': brand.bad_examples,
     }
 
 
@@ -80,6 +89,33 @@ def parse_dna_generation_request(brief: Brief | None) -> dict[str, Any] | None:
     if payload.get('kind') not in {BRAND_DNA_BRIEF_KIND, PRODUCT_DNA_BRIEF_KIND}:
         return None
     return payload
+
+
+def parse_dna_generation_output(output_text: str | None) -> dict[str, Any] | None:
+    if output_text is None:
+        return None
+    text = output_text.strip()
+    if not text:
+        return None
+    if text.startswith('```'):
+        text = text.strip('`')
+        if text.startswith('json\n'):
+            text = text[5:]
+    if text.startswith('<json>') and text.endswith('</json>'):
+        text = text[len('<json>') : -len('</json>')].strip()
+    candidates = [text]
+    start = text.find('{')
+    end = text.rfind('}')
+    if 0 <= start < end:
+        candidates.append(text[start : end + 1])
+    for candidate in candidates:
+        try:
+            payload = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, dict):
+            return payload
+    return None
 
 
 def parse_uuid(value: Any) -> UUID | None:

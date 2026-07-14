@@ -32,12 +32,12 @@ export function LoginForm() {
   return (
     <form className="form-grid" onSubmit={handleSubmit}>
       <label className="label-stack">
-        <span>Email</span>
+        <span>Электронная почта</span>
         <input
           autoComplete="email"
           className="input"
           onChange={(event) => setEmail(event.target.value)}
-          placeholder="owner@example.com"
+          placeholder="имя@пример.рф"
           required
           type="email"
           value={email}

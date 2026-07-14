@@ -1,15 +1,18 @@
 # Handoff
 
 ## Summary for the next packet
-- Content-generation context propagation is now implemented end-to-end for the current packet.
-- `Brief.content` carries the rich nested generation payload, `JobRead` now surfaces `brief_content`, and the worker role prompt injects that payload for the LLM.
-- Scope mismatch on product-scoped generation is covered by tests and returns `409`.
-- Full API/worker regression is green after the packet.
+- The new `/production-flow` page is now the guided entrypoint for the live product workspaces.
+- It shows current org/brand scope, counts for products/segments/briefs/plans/jobs, and a recommended next action.
+- Dashboard and onboarding now link into the flow so users can start from one obvious place.
+- The actual create/edit actions still live in the dedicated domain screens, which keeps the coordinator thin and avoids duplicate workflow state.
+- The coordinator now also offers in-page quick actions for creating a brief and generating content plans from the current scope.
+- The visible UI copy on the main product pages is now Russian-only.
+- The Russian-first cleanup now also covers subscriptions, media assets, products, content plans, audience segments, support, dashboard, and the production-flow coordinator.
 
 ## Do next
 - Continue with the next user-directed packet only after deploy / live verification if requested.
-- Keep future generation packets appending context to the same brief/job contract rather than reintroducing ID-only handoffs.
+- If the user wants a deeper workflow upgrade, extend the coordinator with richer recommendations rather than reintroducing a second write surface.
 
 ## Do not do
-- Do not fall back to ID-only prompts for content generation.
-- Do not add a separate parallel context store unless the user explicitly requests an architectural change.
+- Do not fall back to a separate workflow backend unless the product explicitly needs it.
+- Do not duplicate the existing create/edit forms inside the coordinator page.

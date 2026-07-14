@@ -6,7 +6,7 @@ export default function RegisterPage() {
     <main className="centered-page">
       <section className="card stack-lg auth-card">
         <div className="stack-sm">
-          <span className="eyebrow">Client onboarding</span>
+          <span className="eyebrow">Онбординг клиента</span>
           <h1>Регистрация в Content Factory</h1>
           <p className="muted">
             Самостоятельная регистрация для новых пользователей. После входа откроется onboarding-мастер и затем рабочий кабинет.

@@ -105,12 +105,52 @@ export interface BrandRead {
   slug: string;
   status: string;
   dna_json: Record<string, unknown> | null;
+  positioning: string | null;
+  tone_of_voice: string[] | null;
+  mission: string | null;
+  values: string[] | null;
+  forbidden_claims: string[] | null;
+  allowed_claims: string[] | null;
+  competitors: string[] | null;
+  good_examples: string[] | null;
+  bad_examples: string[] | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface BrandListResponse {
   items: BrandRead[];
+}
+
+export interface BrandCreateInput {
+  organization_id: string;
+  name: string;
+  slug: string;
+  status?: string;
+  positioning?: string | null;
+  tone_of_voice?: string[] | null;
+  mission?: string | null;
+  values?: string[] | null;
+  forbidden_claims?: string[] | null;
+  allowed_claims?: string[] | null;
+  competitors?: string[] | null;
+  good_examples?: string[] | null;
+  bad_examples?: string[] | null;
+}
+
+export interface BrandUpdateInput {
+  name?: string;
+  slug?: string;
+  status?: string;
+  positioning?: string | null;
+  tone_of_voice?: string[] | null;
+  mission?: string | null;
+  values?: string[] | null;
+  forbidden_claims?: string[] | null;
+  allowed_claims?: string[] | null;
+  competitors?: string[] | null;
+  good_examples?: string[] | null;
+  bad_examples?: string[] | null;
 }
 
 export interface ProductRead {

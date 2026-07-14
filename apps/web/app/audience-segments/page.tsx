@@ -15,8 +15,8 @@ import {
 import type { AudienceSegmentRead, BrandRead, OrganizationRead, ProductRead } from '../../lib/types';
 
 const SCOPE_OPTIONS = [
-  { value: 'brand', label: 'Brand' },
-  { value: 'product', label: 'Product' },
+  { value: 'brand', label: 'Бренд' },
+  { value: 'product', label: 'Продукт' },
 ] as const;
 
 type AudienceSegmentFormState = {
@@ -83,7 +83,7 @@ export default function AudienceSegmentsPage() {
 
     const scope = loadScopeSelection();
     if (!scope?.organizationId || !scope.brandId) {
-      setError('Сначала выбери organization и brand на dashboard');
+      setError('Сначала выбери организацию и бренд на панели');
       setIsLoading(false);
       return;
     }
@@ -185,11 +185,11 @@ export default function AudienceSegmentsPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!accessToken || !organizationId || !brandId) {
-      setError('Нет активного scope');
+      setError('Нет активной области');
       return;
     }
     if (selectedScope === 'product' && !selectedProductId) {
-      setError('Для product scope нужен product_id');
+      setError('Для области продукта нужен идентификатор продукта');
       return;
     }
 
@@ -210,7 +210,7 @@ export default function AudienceSegmentsPage() {
         objections: splitList(form.objections),
         keywords: splitList(form.keywords),
       });
-      setNotice(`Audience segment создан: ${saved.name}`);
+      setNotice(`Сегмент аудитории создан: ${saved.name}`);
       setForm(EMPTY_FORM);
       const response = await getAudienceSegments(
         accessToken,
@@ -221,7 +221,7 @@ export default function AudienceSegmentsPage() {
       );
       setSegments(response.items);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось сохранить audience segment');
+      setError(err instanceof Error ? err.message : 'Не удалось сохранить сегмент аудитории');
     } finally {
       setIsSaving(false);
     }
@@ -231,15 +231,15 @@ export default function AudienceSegmentsPage() {
     <main className="page stack-xl">
       <section className="hero-row">
         <div className="stack-sm">
-          <span className="eyebrow">Audience segments</span>
+          <span className="eyebrow">Сегменты аудитории</span>
           <h1>Сегменты аудитории</h1>
           <p className="muted">
-            Brand/product aware аудитории: список, запись в live API и поддержка product scope.
+            Аудитории с учётом бренда и продукта: список, запись в live API и поддержка области продукта.
           </p>
         </div>
         <div className="row">
-          <Link className="secondary-button" href="/dashboard">Dashboard</Link>
-          <Link className="secondary-button" href="/products">Products</Link>
+          <Link className="secondary-button" href="/dashboard">Панель</Link>
+          <Link className="secondary-button" href="/products">Продукты</Link>
         </div>
       </section>
 
@@ -259,22 +259,22 @@ export default function AudienceSegmentsPage() {
 
       <section className="grid two-up">
         <article className="card stack-sm">
-          <h2>Scope</h2>
+          <h2>Область</h2>
           <dl className="keyvals">
-            <div><dt>Organization</dt><dd>{currentOrganization ? currentOrganization.name : organizationId ?? '—'}</dd></div>
-            <div><dt>Brand</dt><dd>{currentBrand ? currentBrand.name : brandId ?? '—'}</dd></div>
-            <div><dt>Scope mode</dt><dd>{selectedScope}</dd></div>
-            <div><dt>Product</dt><dd>{selectedProduct ? selectedProduct.name : '—'}</dd></div>
-            <div><dt>Segments loaded</dt><dd>{segments.length}</dd></div>
+            <div><dt>Организация</dt><dd>{currentOrganization ? currentOrganization.name : organizationId ?? '—'}</dd></div>
+            <div><dt>Бренд</dt><dd>{currentBrand ? currentBrand.name : brandId ?? '—'}</dd></div>
+            <div><dt>Режим области</dt><dd>{selectedScope}</dd></div>
+            <div><dt>Продукт</dt><dd>{selectedProduct ? selectedProduct.name : '—'}</dd></div>
+            <div><dt>Загружено сегментов</dt><dd>{segments.length}</dd></div>
           </dl>
         </article>
 
         <article className="card stack-sm">
           <h2>Что доступно</h2>
           <ul className="checklist">
-            <li>чтение audience segments по current org/brand scope</li>
-            <li>запись audience segment через live API</li>
-            <li>product scope поддерживается через опциональный product_id</li>
+            <li>чтение сегментов аудитории по текущей области организации и бренда</li>
+            <li>запись сегмента аудитории через live API</li>
+            <li>область продукта поддерживается через необязательный идентификатор продукта</li>
           </ul>
         </article>
       </section>
@@ -283,14 +283,14 @@ export default function AudienceSegmentsPage() {
         <article className="card stack-md">
           <div className="section-header">
             <div>
-              <h2>Создать audience segment</h2>
+              <h2>Создать сегмент аудитории</h2>
               <p className="muted">Брендовый или продуктовый сегмент для генерации контента.</p>
             </div>
           </div>
 
           <form className="stack-md" onSubmit={handleSubmit}>
             <label className="label-stack">
-              <span>Scope</span>
+              <span>Область</span>
               <select className="input" onChange={(event) => setSelectedScope(event.target.value as 'brand' | 'product')} value={selectedScope}>
                 {SCOPE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
@@ -299,25 +299,25 @@ export default function AudienceSegmentsPage() {
             </label>
 
             <label className="label-stack">
-              <span>Product</span>
+              <span>Продукт</span>
               <select className="input" disabled={selectedScope !== 'product' || productOptions.length === 0} onChange={(event) => setSelectedProductId(event.target.value)} value={selectedProductId}>
                 {selectedScope === 'product' && productOptions.length === 0 ? <option value="">Нет продуктов</option> : null}
-                <option value="">{selectedScope === 'product' ? 'Выбери product' : 'Brand scope — product не нужен'}</option>
+                <option value="">{selectedScope === 'product' ? 'Выбери продукт' : 'Область бренда — продукт не нужен'}</option>
                 {productOptions.map((product) => (
                   <option key={product.id} value={product.id}>{product.label}</option>
                 ))}
               </select>
             </label>
 
-            <label className="label-stack"><span>Name</span><input className="input" onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required value={form.name} /></label>
-            <label className="label-stack"><span>Description</span><textarea className="input" onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} rows={3} required value={form.description} /></label>
-            <label className="label-stack"><span>Pain points</span><textarea className="input" onChange={(event) => setForm((current) => ({ ...current, pain_points: event.target.value }))} rows={4} value={form.pain_points} /></label>
-            <label className="label-stack"><span>Goals</span><textarea className="input" onChange={(event) => setForm((current) => ({ ...current, goals: event.target.value }))} rows={4} value={form.goals} /></label>
-            <label className="label-stack"><span>Objections</span><textarea className="input" onChange={(event) => setForm((current) => ({ ...current, objections: event.target.value }))} rows={4} value={form.objections} /></label>
-            <label className="label-stack"><span>Keywords</span><textarea className="input" onChange={(event) => setForm((current) => ({ ...current, keywords: event.target.value }))} rows={4} value={form.keywords} /></label>
+            <label className="label-stack"><span>Название</span><input className="input" onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required value={form.name} /></label>
+            <label className="label-stack"><span>Описание</span><textarea className="input" onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} rows={3} required value={form.description} /></label>
+            <label className="label-stack"><span>Боли</span><textarea className="input" onChange={(event) => setForm((current) => ({ ...current, pain_points: event.target.value }))} rows={4} value={form.pain_points} /></label>
+            <label className="label-stack"><span>Цели</span><textarea className="input" onChange={(event) => setForm((current) => ({ ...current, goals: event.target.value }))} rows={4} value={form.goals} /></label>
+            <label className="label-stack"><span>Возражения</span><textarea className="input" onChange={(event) => setForm((current) => ({ ...current, objections: event.target.value }))} rows={4} value={form.objections} /></label>
+            <label className="label-stack"><span>Ключевые слова</span><textarea className="input" onChange={(event) => setForm((current) => ({ ...current, keywords: event.target.value }))} rows={4} value={form.keywords} /></label>
 
             <button className="primary-button" disabled={isSaving} type="submit">
-              {isSaving ? 'Сохраняем…' : 'Создать audience segment'}
+              {isSaving ? 'Сохраняем…' : 'Создать сегмент аудитории'}
             </button>
           </form>
         </article>
@@ -325,8 +325,8 @@ export default function AudienceSegmentsPage() {
         <article className="card stack-md">
           <div className="section-header">
             <div>
-              <h2>Audience segments</h2>
-              <p className="muted">Список текущих сегментов для выбранного scope.</p>
+              <h2>Сегменты аудитории</h2>
+              <p className="muted">Список текущих сегментов для выбранной области.</p>
             </div>
             <span className="pill">{segments.length}</span>
           </div>
@@ -336,20 +336,20 @@ export default function AudienceSegmentsPage() {
               <article className="brief-card stack-xs" key={segment.id}>
                 <div className="brief-meta">
                   <strong>{segment.name}</strong>
-                  <span className="pill subtle-pill">{segment.scope}</span>
+                  <span className="pill subtle-pill">{segment.scope === 'brand' ? 'Бренд' : 'Продукт'}</span>
                 </div>
                 <p className="brief-content">{segment.description}</p>
                 <dl className="keyvals">
-                  <div><dt>Pain points</dt><dd>{joinList(segment.pain_points) || '—'}</dd></div>
-                  <div><dt>Goals</dt><dd>{joinList(segment.goals) || '—'}</dd></div>
-                  <div><dt>Objections</dt><dd>{joinList(segment.objections) || '—'}</dd></div>
-                  <div><dt>Keywords</dt><dd>{joinList(segment.keywords) || '—'}</dd></div>
-                  <div><dt>Product</dt><dd>{segment.product_id ?? '—'}</dd></div>
-                  <div><dt>Created</dt><dd>{formatDateTime(segment.created_at)}</dd></div>
+                  <div><dt>Боли</dt><dd>{joinList(segment.pain_points) || '—'}</dd></div>
+                  <div><dt>Цели</dt><dd>{joinList(segment.goals) || '—'}</dd></div>
+                  <div><dt>Возражения</dt><dd>{joinList(segment.objections) || '—'}</dd></div>
+                  <div><dt>Ключевые слова</dt><dd>{joinList(segment.keywords) || '—'}</dd></div>
+                  <div><dt>Продукт</dt><dd>{segment.product_id ?? '—'}</dd></div>
+                  <div><dt>Создан</dt><dd>{formatDateTime(segment.created_at)}</dd></div>
                 </dl>
               </article>
             ))}
-            {!isLoading && segments.length === 0 ? <p className="muted">Пока нет audience segments в текущем scope.</p> : null}
+            {!isLoading && segments.length === 0 ? <p className="muted">Пока нет сегментов аудитории в текущей области.</p> : null}
           </div>
         </article>
       </section>

@@ -76,6 +76,7 @@ class JobRead(BaseModel):
     brand_id: UUID
     brief_id: UUID
     brief_content: str | None = None
+    context: dict[str, Any] | None = None
     kind: str = Field(description='Explicit job kind used for completion routing.')
     target_brand_id: UUID | None = None
     target_product_id: UUID | None = None

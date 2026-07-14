@@ -28,8 +28,8 @@ from app.db.models.product import Product
 from app.db.models.ticket import Ticket
 from app.db.models.organization import Organization, OrganizationMembership
 from app.db.session import get_db
-from app.domain.content_generation import parse_content_generation_request
-from app.domain.dna_generation import parse_dna_generation_request
+from app.domain.content_generation import parse_content_generation_output, parse_content_generation_request
+from app.domain.dna_generation import parse_dna_generation_output, parse_dna_generation_request
 from app.domain.ticket_processing import parse_ticket_processing_request
 from app.domain.internal_agent_roles import resolve_internal_role_plan
 
@@ -740,6 +740,7 @@ def _job_read(db: Session, job: Job) -> JobRead:
         'brand_id': job.brand_id,
         'brief_id': job.brief_id,
         'brief_content': brief.content if brief is not None else None,
+        'context': parse_content_generation_request(brief),
         'kind': job.kind,
         'target_brand_id': job.target_brand_id,
         'target_product_id': job.target_product_id,
@@ -1081,19 +1082,23 @@ def complete_job(
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Generated content item does not belong to job scope')
             version_number = next_content_version_number(db, target_content_item.id)
             generation_type = GenerationType.INITIAL if version_number == 1 else GenerationType.REVISION
-            content_version = create_content_version_record(
-                db=db,
-                content_item=target_content_item,
-                organization_id=target_content_item.organization_id,
-                version_number=version_number,
-                body_markdown=payload.output_text,
-                structured_json={
+            structured_json, body_markdown = parse_content_generation_output(payload.output_text)
+            if structured_json is None or body_markdown is None:
+                structured_json = {
                     'source_job_id': str(job.id),
                     'source_brief_id': str(job.brief_id),
                     'content_generation_request': content_generation_request,
                     'worker_output_artifact_key': artifact_key,
                     'worker_output_artifact_url': payload.output_artifact_url,
-                },
+                }
+                body_markdown = payload.output_text
+            content_version = create_content_version_record(
+                db=db,
+                content_item=target_content_item,
+                organization_id=target_content_item.organization_id,
+                version_number=version_number,
+                body_markdown=body_markdown,
+                structured_json=structured_json,
                 change_summary='Generated from content item job completion',
                 generation_type=generation_type,
                 generated_from_task_id=job.id,
@@ -1111,8 +1116,8 @@ def complete_job(
                 checked_at=now,
             )
         elif job.kind == 'dna_generation' or (job.kind == 'manual' and legacy_dna_generation_request is not None):
-            generated_dna = json.loads(payload.output_text)
-            if not isinstance(generated_dna, dict):
+            generated_dna = parse_dna_generation_output(payload.output_text)
+            if generated_dna is None:
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Generated DNA payload must be a JSON object')
             target_brand_id = job.target_brand_id or (UUID(legacy_dna_generation_request['brand_id']) if legacy_dna_generation_request and legacy_dna_generation_request.get('brand_id') else None)
             target_product_id = job.target_product_id or (UUID(legacy_dna_generation_request['product_id']) if legacy_dna_generation_request and legacy_dna_generation_request.get('product_id') else None)

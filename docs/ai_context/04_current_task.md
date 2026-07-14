@@ -1,28 +1,25 @@
 # Current task
 
 ## Task ID
-content-generation-context-packet-c1
+web-production-flow-packet-01
 
 ## Status
 Completed.
 
 ## What shipped
-- `app/domain/content_generation.py` now resolves rich generation context from the database and serializes it into a nested brief payload with:
-  - `brand_context`
-  - `product_context`
-  - `audience_context`
-  - `channel`
-  - `task`
-- `app/api/v1/content_items.py` now passes `db` into the brief-content builder.
-- `app/schemas/job.py` and `app/api/v1/jobs.py` now expose `brief_content` alongside `brief_id` in `JobRead` so workers receive the actual brief payload, not just the reference ID.
-- `apps/worker/app/role_prompts.py` now injects `brief_content` into the role prompt so the LLM sees the generated context.
-- Added `tests/test_packet206.py` for the rich context builder and scope mismatch guard.
-- Added/updated worker prompt coverage in `apps/worker/tests/test_role_prompts.py`.
+- Added `/production-flow` as a guided client-side coordinator for the existing product workspaces.
+- The new page shows the current organization/brand scope, counts for products/segments/briefs/plans/jobs, and the next recommended action.
+- Dashboard and onboarding now link to the production flow as the primary entrypoint.
+- The production flow reuses the established domain screens for the actual writes instead of introducing a separate workflow backend.
+- Added in-page quick actions for creating a brief and generating content plans from the current scope.
+- Localized the visible web UI to Russian labels and copy on the main product pages.
+- Expanded the Russian-first cleanup to subscriptions, media assets, products, content plans, audience segments, support, dashboard, and the production-flow coordinator.
 
 ## Verification
-- `uv run pytest -q tests/test_packet206.py`
-- `uv run pytest -q tests/test_role_prompts.py`
-- `uv run pytest -q`
+- `npm run build` in `apps/web`
+- `docker compose build cf-web`
+- `docker compose up -d --force-recreate cf-web`
+- Live browser smoke on `https://app.uno-ai.pw/production-flow` after login
 
 ## Next packet
-- Wait for the next user-directed roadmap step after deploy verification.
+- Wait for the next user-directed step after deploy / live verification if requested.

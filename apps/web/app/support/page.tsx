@@ -10,6 +10,26 @@ import type { MeResponse, SupportUserLookupResponse } from '../../lib/types';
 
 const SUPPORT_ROLES = new Set(['super_admin', 'platform_admin']);
 
+function formatPlatformRole(role: string | null | undefined): string {
+  const map: Record<string, string> = {
+    super_admin: 'суперадминистратор',
+    platform_admin: 'администратор платформы',
+    client_owner: 'владелец клиента',
+    client_manager: 'менеджер клиента',
+    client_reviewer: 'ревьюер клиента',
+  };
+  return role ? map[role] ?? role : '—';
+}
+
+function formatOrganizationStatus(status: string | null | undefined): string {
+  const map: Record<string, string> = {
+    active: 'активна',
+    inactive: 'неактивна',
+    pending: 'ожидает',
+  };
+  return status ? map[status] ?? status : '—';
+}
+
 export default function SupportPage() {
   const router = useRouter();
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -82,15 +102,15 @@ export default function SupportPage() {
     <main className="page stack-xl">
       <section className="hero-row">
         <div className="stack-sm">
-          <span className="eyebrow">Operator support</span>
-          <h1>Recovery / support lookup</h1>
+          <span className="eyebrow">Поддержка оператора</span>
+          <h1>Поиск восстановления и поддержки</h1>
           <p className="muted">
-            Быстрый операторский поиск пользователя по email: профиль, platform role и memberships по организациям.
+            Быстрый операторский поиск пользователя по электронной почте: профиль, роль платформы и членства по организациям.
           </p>
         </div>
         <div className="row">
-          <Link className="secondary-button" href="/dashboard">Dashboard</Link>
-          <Link className="secondary-button" href="/members">Members</Link>
+          <Link className="secondary-button" href="/dashboard">Панель</Link>
+          <Link className="secondary-button" href="/members">Участники</Link>
         </div>
       </section>
 
@@ -101,21 +121,21 @@ export default function SupportPage() {
         <section className="card stack-sm error-card">
           <h2>Недостаточно прав</h2>
           <p>Эта страница доступна только super_admin и platform_admin.</p>
-          <p className="muted">Текущий platform role: {me.user.platform_role ?? '—'}</p>
+          <p className="muted">Текущий platform role: {formatPlatformRole(me.user.platform_role)}</p>
         </section>
       ) : null}
 
       {canUseSupport ? (
         <>
           <section className="card stack-md">
-            <h2>Lookup user</h2>
+            <h2>Поиск пользователя</h2>
             <form className="stack-md" onSubmit={handleSubmit}>
               <label className="label-stack">
-                <span>Email</span>
+                <span>Электронная почта</span>
                 <input
                   className="input"
                   onChange={(event) => setEmail(event.target.value)}
-                  placeholder="user@example.com"
+                  placeholder="пользователь@пример.рф"
                   required
                   type="email"
                   value={email}
@@ -130,30 +150,30 @@ export default function SupportPage() {
           {result ? (
             <section className="grid two-up briefs-grid">
               <article className="card stack-sm">
-                <h2>User profile</h2>
+                <h2>Профиль пользователя</h2>
                 <dl className="keyvals">
-                  <div><dt>Email</dt><dd>{result.user.email}</dd></div>
-                  <div><dt>Name</dt><dd>{result.user.full_name ?? '—'}</dd></div>
-                  <div><dt>Platform role</dt><dd>{result.user.platform_role ?? '—'}</dd></div>
-                  <div><dt>Active</dt><dd>{result.user.is_active ? 'yes' : 'no'}</dd></div>
-                  <div><dt>Created</dt><dd>{new Date(result.user.created_at).toLocaleString('ru-RU')}</dd></div>
+                  <div><dt>Электронная почта</dt><dd>{result.user.email}</dd></div>
+                  <div><dt>Имя</dt><dd>{result.user.full_name ?? '—'}</dd></div>
+                  <div><dt>Роль на платформе</dt><dd>{formatPlatformRole(result.user.platform_role)}</dd></div>
+                  <div><dt>Активен</dt><dd>{result.user.is_active ? 'да' : 'нет'}</dd></div>
+                  <div><dt>Создан</dt><dd>{new Date(result.user.created_at).toLocaleString('ru-RU')}</dd></div>
                 </dl>
               </article>
 
               <article className="card stack-sm">
-                <h2>Memberships</h2>
+                <h2>Членства</h2>
                 <div className="stack-sm">
                   {result.memberships.map((membership) => (
                     <article className="brief-card stack-xs" key={membership.organization_id}>
                       <div className="brief-meta">
                         <strong>{membership.organization_name}</strong>
-                        <span className="pill subtle-pill">{membership.role}</span>
+                        <span className="pill subtle-pill">{formatPlatformRole(membership.role)}</span>
                       </div>
-                      <p className="muted">{membership.organization_slug} · {membership.organization_status}</p>
+                      <p className="muted">{membership.organization_slug} · {formatOrganizationStatus(membership.organization_status)}</p>
                       <div className="row-label mono">{new Date(membership.created_at).toLocaleString('ru-RU')}</div>
                     </article>
                   ))}
-                  {result.memberships.length === 0 ? <p className="muted">У пользователя нет memberships.</p> : null}
+                  {result.memberships.length === 0 ? <p className="muted">У пользователя нет членств.</p> : null}
                 </div>
               </article>
             </section>
