@@ -288,7 +288,7 @@ export default function ContentPlansPage() {
           <span className="eyebrow">Контент-планы</span>
           <h1>Генерация контент-планов</h1>
           <p className="muted">
-            Планирование по датам с учётом области и контекста ДНК бренда/продукта.
+            AI-генерация плана по методологии выбранной площадки: разные форматы и темы, воронка awareness→trust→sales, на основе Brand DNA, фактов товара и аудитории.
           </p>
         </div>
         <div className="row">
@@ -343,7 +343,7 @@ export default function ContentPlansPage() {
           <div className="section-header">
             <div>
               <h2>Сгенерировать планы</h2>
-              <p className="muted">Создаёт один контент-план на каждый день между start и end включительно.</p>
+              <p className="muted">AI создаёт осмысленный план на период: подходящая частота для площадки, разные форматы (пост/reel/карусель/сторис/видео), у каждой строки — тема, тип и краткий бриф с хуком.</p>
             </div>
           </div>
 
