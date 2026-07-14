@@ -29,10 +29,23 @@ def _get(path: str) -> dict:
         return json.loads(r.read().decode('utf-8'))
 
 
-def generate_image_url(prompt: str, *, model: str | None = None, image_size: str = '1:1', poll_seconds: int = 120) -> str:
-    """Create an image task on kie.ai and poll until a result URL is available."""
-    model = model or os.environ.get('KIE_IMAGE_MODEL', DEFAULT_IMAGE_MODEL)
-    created = _post('/jobs/createTask', {'model': model, 'input': {'prompt': prompt, 'image_size': image_size}})
+EDIT_IMAGE_MODEL = 'google/nano-banana-edit'
+
+
+def generate_image_url(prompt: str, *, model: str | None = None, image_size: str = '1:1', image_urls: list[str] | None = None, poll_seconds: int = 120) -> str:
+    """Create an image task on kie.ai and poll until a result URL is available.
+
+    If image_urls (reference images) are provided, uses the edit (image-to-image)
+    model so the generated image is guided by the references.
+    """
+    if image_urls:
+        model = model or os.environ.get('KIE_EDIT_MODEL', EDIT_IMAGE_MODEL)
+    else:
+        model = model or os.environ.get('KIE_IMAGE_MODEL', DEFAULT_IMAGE_MODEL)
+    task_input: dict = {'prompt': prompt, 'image_size': image_size}
+    if image_urls:
+        task_input['image_urls'] = image_urls
+    created = _post('/jobs/createTask', {'model': model, 'input': task_input})
     if created.get('code') != 200:
         raise RuntimeError(f'kie.ai createTask failed: {created.get("msg")}')
     task_id = (created.get('data') or {}).get('taskId')

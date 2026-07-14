@@ -524,3 +524,28 @@ export async function fetchMediaBlobUrl(accessToken: string, fileUrl: string): P
 export function listContentItemImages(accessToken: string, itemId: string): Promise<{ items: { id: string; image_prompt: string; content_type: string; file_url: string; created_at: string | null }[] }> {
   return apiFetch(`/api/v1/content-items/${itemId}/images`, { method: 'GET', headers: authHeaders(accessToken) });
 }
+
+// ---------- References ----------
+export interface ReferenceAsset { id: string; name: string; content_type: string; file_url: string; created_at: string | null; }
+
+export function listReferences(accessToken: string, organizationId: string, brandId: string, productId?: string | null): Promise<{ items: ReferenceAsset[] }> {
+  const params = new URLSearchParams({ organization_id: organizationId, brand_id: brandId });
+  if (productId) params.set('product_id', productId);
+  return apiFetch(`/api/v1/references?${params.toString()}`, { method: 'GET', headers: authHeaders(accessToken) });
+}
+
+export async function uploadReference(accessToken: string, opts: { organizationId: string; brandId: string; productId?: string | null; file: File }): Promise<{ id: string; name: string; file_url: string }> {
+  const form = new FormData();
+  form.append('organization_id', opts.organizationId);
+  form.append('brand_id', opts.brandId);
+  if (opts.productId) form.append('product_id', opts.productId);
+  form.append('file', opts.file);
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/references`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body: form });
+  if (!res.ok) throw new Error(await readErrorMessage(res));
+  return res.json();
+}
+
+export async function deleteReference(accessToken: string, referenceId: string): Promise<void> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/references/${referenceId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!res.ok && res.status !== 204) throw new Error(await readErrorMessage(res));
+}

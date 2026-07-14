@@ -13,7 +13,8 @@ dependencies = [
   "redis",
   "python-jose[cryptography]",
   "passlib[bcrypt]",
-  "minio"
+  "minio",
+  "python-multipart"
 ]
 
 [project.optional-dependencies]
