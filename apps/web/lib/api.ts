@@ -520,3 +520,7 @@ export async function fetchMediaBlobUrl(accessToken: string, fileUrl: string): P
   const blob = await res.blob();
   return URL.createObjectURL(blob);
 }
+
+export function listContentItemImages(accessToken: string, itemId: string): Promise<{ items: { id: string; image_prompt: string; content_type: string; file_url: string; created_at: string | null }[] }> {
+  return apiFetch(`/api/v1/content-items/${itemId}/images`, { method: 'GET', headers: authHeaders(accessToken) });
+}

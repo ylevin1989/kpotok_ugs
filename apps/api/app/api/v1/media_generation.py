@@ -89,6 +89,37 @@ def generate_content_item_image(
     }
 
 
+@router.get('/content-items/{item_id}/images')
+def list_content_item_images(
+    item_id: UUID,
+    memberships: list[OrganizationMembership] = Depends(get_accessible_memberships),
+    db: Session = Depends(get_db),
+) -> dict:
+    item = db.get(ContentItem, item_id)
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Content item not found')
+    get_organization_membership(item.organization_id, memberships)
+    key_fragment = f'/content-items/{item.id}/images/'
+    assets = (
+        db.query(MediaAsset)
+        .filter(MediaAsset.organization_id == item.organization_id, MediaAsset.asset_key.like(f'%{key_fragment}%'))
+        .order_by(MediaAsset.created_at.desc())
+        .all()
+    )
+    return {
+        'items': [
+            {
+                'id': str(a.id),
+                'image_prompt': a.description,
+                'content_type': a.content_type,
+                'file_url': f'/api/v1/media-assets/{a.id}/file',
+                'created_at': a.created_at.isoformat() if a.created_at else None,
+            }
+            for a in assets
+        ]
+    }
+
+
 @router.get('/media-assets/{media_id}/file')
 def get_media_asset_file(
     media_id: UUID,

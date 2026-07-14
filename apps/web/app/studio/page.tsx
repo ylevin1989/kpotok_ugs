@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { loadSession, loadScopeSelection } from '../../lib/auth';
-import { listContentItems, generateContentItemImage, fetchMediaBlobUrl, type StudioContentItem } from '../../lib/api';
+import { listContentItems, listContentItemImages, generateContentItemImage, fetchMediaBlobUrl, type StudioContentItem } from '../../lib/api';
 
 export default function StudioPage() {
   const router = useRouter();
@@ -23,7 +23,23 @@ export default function StudioPage() {
     const scope = loadScopeSelection();
     if (!scope?.organizationId || !scope?.brandId) { setNoScope(true); setLoading(false); return; }
     listContentItems(s.accessToken, scope.organizationId, scope.brandId)
-      .then((r) => setItems(r.items))
+      .then(async (r) => {
+        setItems(r.items);
+        // load already-generated images for each post
+        await Promise.all(r.items.map(async (it) => {
+          try {
+            const imgs = await listContentItemImages(s.accessToken, it.id);
+            const latest = imgs.items[0];
+            if (latest) {
+              const url = await fetchMediaBlobUrl(s.accessToken, latest.file_url);
+              setImages((m) => ({ ...m, [it.id]: url }));
+              if (latest.image_prompt) setPrompts((m) => ({ ...m, [it.id]: latest.image_prompt }));
+            }
+          } catch {
+            /* ignore per-item image load errors */
+          }
+        }));
+      })
       .catch((e) => setErr(String(e)))
       .finally(() => setLoading(false));
   }, [router]);
