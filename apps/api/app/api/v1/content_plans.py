@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date as _date
+
 import csv
 import io
 import json
@@ -19,6 +21,7 @@ from app.api.v1.products import get_product_in_organization_brand
 from app.db.models.audience_segment import AudienceSegment
 from app.db.models.brand import Brand
 from app.db.models.content_plan import ContentPlan
+from app.domain.content_plan_generation import generate_plan_items
 from app.db.models.organization import Organization, OrganizationMembership
 from app.db.models.product import Product
 from app.db.session import get_db
@@ -195,29 +198,40 @@ def generate_content_plans(
     if payload.audience_segment_id is not None:
         audience_segment = get_audience_segment_in_organization_brand(db, payload.audience_segment_id, payload.organization_id, payload.brand_id)
 
+    try:
+        generated = generate_plan_items(
+            brand=brand, product=product, audience=audience_segment,
+            platform=payload.platform, start=payload.start_date, end=payload.end_date, goal=payload.goal,
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f'Content plan generation failed: {exc}')
+
     items: list[ContentPlan] = []
-    current_date = payload.start_date
-    context_suffix = _build_generation_context(brand, product, audience_segment)
-    while current_date <= payload.end_date:
-        title = f"{payload.title_prefix} — {current_date.isoformat()}"
-        if context_suffix:
-            title = f"{title} — {context_suffix}"
+    for g in generated:
+        try:
+            item_date = _date.fromisoformat(g['date'])
+        except ValueError:
+            item_date = payload.start_date
+        if item_date < payload.start_date or item_date > payload.end_date:
+            item_date = payload.start_date
+        goal_text = g['brief'] or payload.goal
+        if g.get('funnel_stage'):
+            goal_text = f"[{g['funnel_stage']}] {goal_text}"
         content_plan = ContentPlan(
             organization_id=payload.organization_id,
             brand_id=payload.brand_id,
             product_id=payload.product_id,
             audience_segment_id=payload.audience_segment_id,
             scope=payload.scope.value,
-            date=current_date,
-            title=title,
+            date=item_date,
+            title=g['title'],
             platform=payload.platform,
-            content_type=payload.content_type,
-            goal=payload.goal,
+            content_type=g['content_type'] or payload.content_type,
+            goal=goal_text,
             status=payload.status,
         )
         db.add(content_plan)
         items.append(content_plan)
-        current_date += timedelta(days=1)
     db.commit()
     for item in items:
         db.refresh(item)
