@@ -492,3 +492,31 @@ export function adminAddMember(accessToken: string, payload: { organization_id: 
 export function adminSetPlatformRole(accessToken: string, userId: string, platform_role: string | null): Promise<unknown> {
   return apiFetch(`/api/v1/admin/users/${userId}/platform-role`, { method: 'POST', headers: authHeaders(accessToken), body: JSON.stringify({ platform_role }) });
 }
+
+// ---------- Studio: content items + image generation ----------
+export interface StudioContentItem {
+  id: string;
+  title: string;
+  platform: string;
+  content_type: string;
+  goal: string;
+  status: string;
+  quality_score: number;
+  current_version_id: string | null;
+}
+
+export function listContentItems(accessToken: string, organizationId: string, brandId: string): Promise<{ items: StudioContentItem[] }> {
+  const params = new URLSearchParams({ organization_id: organizationId, brand_id: brandId });
+  return apiFetch(`/api/v1/content-items?${params.toString()}`, { method: 'GET', headers: authHeaders(accessToken) });
+}
+
+export function generateContentItemImage(accessToken: string, itemId: string): Promise<{ id: string; image_prompt: string; content_type: string; size_bytes: number; file_url: string }> {
+  return apiFetch(`/api/v1/content-items/${itemId}/generate-image`, { method: 'POST', headers: authHeaders(accessToken) });
+}
+
+export async function fetchMediaBlobUrl(accessToken: string, fileUrl: string): Promise<string> {
+  const res = await fetch(`${getApiBaseUrl()}${fileUrl}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!res.ok) throw new Error('Не удалось загрузить изображение');
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}

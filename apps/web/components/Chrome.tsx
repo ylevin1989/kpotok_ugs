@@ -18,6 +18,7 @@ const NAV: { group: string; items: { href: string; label: string; ic: string }[]
     { href: '/content-plans', label: 'Контент-планы', ic: '▦' },
     { href: '/production-flow', label: 'Производство', ic: '⚙' },
     { href: '/media-assets', label: 'Медиатека', ic: '❏' },
+    { href: '/studio', label: 'Медиа-студия', ic: '✦' },
   ] },
   { group: 'Управление', items: [
     { href: '/members', label: 'Участники', ic: '◍' },
@@ -30,7 +31,7 @@ const NAV: { group: string; items: { href: string; label: string; ic: string }[]
 const TITLES: Record<string, string> = {
   '/dashboard': 'Дашборд', '/brands': 'Бренды', '/products': 'Товары',
   '/audience-segments': 'Аудитории', '/content-plans': 'Контент-планы',
-  '/production-flow': 'Производство', '/media-assets': 'Медиатека',
+  '/production-flow': 'Производство', '/media-assets': 'Медиатека', '/studio': 'Медиа-студия',
   '/members': 'Участники', '/subscriptions': 'Тариф и лимиты',
   '/support': 'Поддержка', '/admin': 'Админ-панель', '/onboarding': 'Онбординг',
 };
