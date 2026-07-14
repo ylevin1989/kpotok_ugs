@@ -466,3 +466,29 @@ export async function downloadJobArtifact(accessToken: string, jobId: string): P
     contentType: response.headers.get('content-type') || 'application/octet-stream',
   };
 }
+
+// ---------- Admin (platform) ----------
+export interface AdminOrg { id: string; name: string; slug: string; status: string; brands: number; products: number; members: number; owners: string[]; created_at: string | null; }
+export interface AdminUser { id: string; email: string; full_name: string | null; platform_role: string | null; is_active: boolean; organizations: number; created_at: string | null; }
+
+export function adminOverview(accessToken: string): Promise<{ organizations: number; brands: number; products: number; users: number }> {
+  return apiFetch('/api/v1/admin/overview', { method: 'GET', headers: authHeaders(accessToken) });
+}
+export function adminListOrganizations(accessToken: string): Promise<{ items: AdminOrg[] }> {
+  return apiFetch('/api/v1/admin/organizations', { method: 'GET', headers: authHeaders(accessToken) });
+}
+export function adminListUsers(accessToken: string): Promise<{ items: AdminUser[] }> {
+  return apiFetch('/api/v1/admin/users', { method: 'GET', headers: authHeaders(accessToken) });
+}
+export function adminCreateOrganization(accessToken: string, payload: { name: string; slug: string; owner_email: string }): Promise<unknown> {
+  return apiFetch('/api/v1/admin/organizations', { method: 'POST', headers: authHeaders(accessToken), body: JSON.stringify(payload) });
+}
+export function adminCreateBrand(accessToken: string, payload: { organization_id: string; name: string; slug: string }): Promise<unknown> {
+  return apiFetch('/api/v1/admin/brands', { method: 'POST', headers: authHeaders(accessToken), body: JSON.stringify(payload) });
+}
+export function adminAddMember(accessToken: string, payload: { organization_id: string; user_email: string; role: string }): Promise<unknown> {
+  return apiFetch('/api/v1/admin/memberships', { method: 'POST', headers: authHeaders(accessToken), body: JSON.stringify(payload) });
+}
+export function adminSetPlatformRole(accessToken: string, userId: string, platform_role: string | null): Promise<unknown> {
+  return apiFetch(`/api/v1/admin/users/${userId}/platform-role`, { method: 'POST', headers: authHeaders(accessToken), body: JSON.stringify({ platform_role }) });
+}

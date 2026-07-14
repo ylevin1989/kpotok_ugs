@@ -23,6 +23,7 @@ const NAV: { group: string; items: { href: string; label: string; ic: string }[]
     { href: '/members', label: 'Участники', ic: '◍' },
     { href: '/subscriptions', label: 'Тариф', ic: '◆' },
     { href: '/support', label: 'Поддержка', ic: '☂' },
+    { href: '/admin', label: 'Админка', ic: '⚑' },
   ] },
 ];
 
@@ -31,7 +32,7 @@ const TITLES: Record<string, string> = {
   '/audience-segments': 'Аудитории', '/content-plans': 'Контент-планы',
   '/production-flow': 'Производство', '/media-assets': 'Медиатека',
   '/members': 'Участники', '/subscriptions': 'Тариф и лимиты',
-  '/support': 'Поддержка', '/onboarding': 'Онбординг',
+  '/support': 'Поддержка', '/admin': 'Админ-панель', '/onboarding': 'Онбординг',
 };
 
 export default function Chrome({ children }: { children: ReactNode }) {
